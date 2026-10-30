@@ -1,0 +1,19 @@
+# Facebook Session & Cookies (Rất quan trọng - tránh lộ tài khoản)
+user_data/
+*.session
+*.cookie
+cookies.json
+
+# SQLite Database & Caches
+*.db
+bot_database.db
+__pycache__/
+*/__pycache__/
+*.pyc
+
+# Logs & OS Files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
