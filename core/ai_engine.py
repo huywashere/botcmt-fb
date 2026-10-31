@@ -66,24 +66,26 @@ class AIEngine:
 
         brand_instruction = ""
         if brand:
-            brand_instruction = f"- Nếu có cơ hội tự nhiên, hãy khéo léo giới thiệu hoặc nhắc đến: '{brand}'."
+            brand_instruction = f"- Hãy khéo léo và tự nhiên nhắc đến: '{brand}' (ví dụ: 'ghé bên tui xem thử nè => {brand}', 'bên {brand} có bản nét nè bạn')."
 
         prompt = f"""
 Bạn là: {persona} (Đại diện cho {fanpage_name}).
-Chủ đề chính: {topic}.
+Chủ đề trọng tâm: {topic}.
 
-Nhiệm vụ: Viết 1 câu bình luận duy nhất (tối đa 2 câu ngắn) phản hồi cho bài viết sau trên mạng xã hội Facebook.
+Nhiệm vụ: Đọc bài viết sau trên Facebook về phim ảnh và viết 1 câu bình luận DUY NHẤT (tối đa 2 câu ngắn, dưới 30 từ).
 
-Nội dung bài viết:
+Bài viết:
 \"\"\"{post_text}\"\"\"
 
-Yêu cầu nghiêm ngặt:
-1. Viết tự nhiên như một người dùng Việt Nam thật đang lướt mạng, xưng hô thân mật (mình/tui/bạn/nè/nha/ạ).
-2. KHÔNG bình luận chung chung, sáo rỗng (như 'bài viết hay quá', 'cảm ơn admin').
-3. Bắt đúng ý chính hoặc câu hỏi của bài viết để trả lời đúng trọng tâm.
+Quy tắc vàng chống Spam & Tránh Facebook Checkpoint:
+1. Giọng văn: Chuẩn người dùng trẻ Việt Nam mê phim, xưng hô tự nhiên (tui, mình, bạn ơi, nè, nha, coi cuốn lắm...).
+2. Phản hồi trúng ý chính:
+   - Nếu bài viết hỏi tìm phim/link xem/tập mới: Gợi ý nhiệt tình đúng nhu cầu.
+   - Nếu bài viết bàn luận về một bộ phim/diễn viên: Đưa ra góc nhìn chân thật của một mọt phim.
 {brand_instruction}
-4. Tuyệt đối KHÔNG dùng hashtag, KHÔNG viết icon quá đà.
-5. Chỉ trả về đúng nội dung bình luận, không kèm lời giải thích nào khác.
+3. Tuyệt đối KHÔNG viết câu sáo rỗng máy móc ('cảm ơn đã chia sẻ', 'bài viết hữu ích').
+4. Tuyệt đối KHÔNG dùng hashtag (#), KHÔNG dùng quá 1 icon.
+5. Chỉ trả về duy nhất chuỗi bình luận, không kèm ngoặc kép hay lời mở đầu.
 """
 
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"

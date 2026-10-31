@@ -77,26 +77,27 @@ def init_db():
     )
     """)
 
-    # Pre-populate default settings
+    # Pre-populate default settings (Tối ưu chuyên sâu cho chủ đề Phim ảnh & Anti-ban)
     default_settings = {
         "gemini_api_key": "",
-        "scan_interval": "5",       # 5 minutes
+        "scan_interval": "5",       # 5 phút quét 1 lần
         "feed_source": "for_you",    # for_you, groups, custom_urls
-        "min_delay": "120",          # seconds
-        "max_delay": "300",          # seconds
-        "topic": "Đánh giá, chia sẻ kinh nghiệm, thảo luận tích cực",
-        "persona": "Đại diện Fanpage thân thiện, hiểu biết, đưa ra lời khuyên chân thực và hữu ích.",
-        "brand_mention": "",
-        "keywords": "",              # Từ khóa lọc bài viết (phân cách bằng dấu phẩy)
-        "spintax_samples": "qua Vườn Phim thử đi nè, web bên tui làm á => vuonphim chấm com\nghé bên tui chơi thử xem sao nha, Vườn Phim nè => vuonphim chấm com\nbên tui là Vườn Phim nè, qua tìm thử phim bạn thích nha => vuonphim chấm com",
+        "min_delay": "150",          # Độ trễ tối thiểu an toàn (2.5 phút)
+        "max_delay": "360",          # Độ trễ tối đa an toàn (6 phút)
+        "topic": "Phim ảnh, review phim, phim bộ Hàn/Trung/Âu Mỹ, chia sẻ cảm nhận điện ảnh, gợi ý phim hay",
+        "persona": "Một bạn trẻ mê phim chính hiệu (mọt phim), xưng tui/mình thân mật, chia sẻ chân thực, tự nhiên như người dùng mạng xã hội thực thụ (dùng các từ: nè, nha, coi cuốn, web mượt lắm...)",
+        "brand_mention": "Vườn Phim => vuonphim chấm com",
+        "keywords": "phim, tập, diễn viên, mọt phim, xem ở đâu, review, netflix, bộ này, tên phim, chiếu rạp, sub, vietsub, thuyết minh, web phim",
+        "spintax_samples": "qua Vườn Phim thử đi nè, web bên tui làm á => vuonphim chấm com\nghé bên tui chơi thử xem sao nha, Vườn Phim nè => vuonphim chấm com\nbên tui là Vườn Phim nè, qua tìm thử phim bạn thích nha => vuonphim chấm com\nthử đổi gió qua Vườn Phim xem sao nè bạn ơi => vuonphim chấm com\ncoi bên Vườn Phim thử nha, nhà tui mới update á => vuonphim chấm com\nbên tui có bản đẹp nè, qua xem thử nha => vuonphim chấm com\nqua web bên tui ủng hộ nè, Vườn Phim á => vuonphim chấm com",
         "auto_comment_enabled": "0",
-        "daily_limit": "25",
-        "active_start": "08:00",
-        "active_end": "23:00"
+        "daily_limit": "25",         # Giới hạn an toàn chống ban tuyệt đối: tối đa 25 cmt/ngày
+        "active_start": "08:00",     # Chỉ chạy từ 8h sáng
+        "active_end": "23:00",       # Dừng lúc 23h đêm (tránh FB quét bot đêm)
+        "session_duration_minutes": "0"  # Hẹn giờ tắt: 0 = chạy theo khung giờ, 60 = chạy 1 tiếng tự tắt
     }
 
     for k, v in default_settings.items():
-        cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
+        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, v))
 
     conn.commit()
     conn.close()

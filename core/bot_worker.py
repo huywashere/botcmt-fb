@@ -65,6 +65,12 @@ class BotWorker:
 
         threading.Thread(target=_job, daemon=True).start()
 
+    def count_today_comments(self):
+        """Đếm số bình luận đã gửi thành công trong ngày hôm nay"""
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        logs = get_recent_logs(limit=200)
+        return sum(1 for l in logs if l.get("status") == "Đã gửi" and str(l.get("created_at", "")).startswith(today_str))
+
     def start_auto(self):
         """Bắt đầu chu trình tự động bình luận theo lịch"""
         if self.is_running:
@@ -77,10 +83,29 @@ class BotWorker:
         def _loop():
             self.browser = BrowserEngine(headless=False)
             self.notify_ui("status", "Hệ thống tự động bình luận đã khởi động...")
+            
+            session_start_time = time.time()
+            consecutive_errors = 0
 
             while self.is_running:
+                # 1. Kiểm tra hẹn giờ phiên chạy (Session Duration)
+                duration_mins = int(get_setting("session_duration_minutes", "0"))
+                if duration_mins > 0:
+                    elapsed_mins = (time.time() - session_start_time) / 60
+                    if elapsed_mins >= duration_mins:
+                        self.notify_ui("status", f"Đã hết thời hạn phiên chạy ({duration_mins} phút). Đã tự dừng an toàn!")
+                        break
+
+                # 2. Kiểm tra giới hạn bình luận tối đa trong ngày (Daily Quota Protection)
+                daily_limit = int(get_setting("daily_limit", "25"))
+                today_count = self.count_today_comments()
+                if today_count >= daily_limit:
+                    self.notify_ui("status", f"Đã đạt giới hạn an toàn {today_count}/{daily_limit} cmt hôm nay. Tự ngắt để bảo vệ Fanpage tuyệt đối!")
+                    break
+
+                # 3. Kiểm tra khung giờ cho phép (Active Hours)
                 if not self.check_active_time():
-                    self.notify_ui("status", "Đang ngoài khung giờ hoạt động. Tạm nghỉ 10 phút...")
+                    self.notify_ui("status", "Đang ngoài khung giờ hoạt động (sau 23h hoặc trước 8h). Tạm nghỉ bảo vệ nick...")
                     for _ in range(600):
                         if not self.is_running:
                             break
@@ -144,6 +169,16 @@ class BotWorker:
                     status_str = "Đã gửi" if success else "Lỗi"
                     log_comment(post_url, post_content[:100], comment_text, "Fanpage", status_str, msg)
                     mark_post_status(post_url, "sent" if success else "failed")
+
+                    # Cơ chế ngắt khẩn cấp (Emergency Circuit Breaker)
+                    if not success:
+                        consecutive_errors += 1
+                        if consecutive_errors >= 2:
+                            self.notify_ui("status", "⚠️ CẢNH BÁO AN TOÀN: Gặp 2 lỗi liên tiếp từ Facebook. Hệ thống tự động DỪNG KHẨN CẤP để bảo vệ Fanpage chống checkpoint!")
+                            self.stop()
+                            break
+                    else:
+                        consecutive_errors = 0
 
                     self.notify_ui("comment_completed", {
                         "post_snippet": post_content[:80],

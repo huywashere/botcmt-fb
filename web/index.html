@@ -425,8 +425,19 @@
             </div>
 
             <div class="space-y-1">
-              <label class="text-xs text-slate-400">Giới hạn bình luận tối đa mỗi ngày:</label>
+              <label class="text-xs text-slate-400">Giới hạn bình luận tối đa mỗi ngày (Chống checkpoint):</label>
               <input id="inputDailyLimit" type="number" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200" value="25">
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs text-slate-400">Thời hạn mỗi phiên chạy (Hẹn giờ tự dừng):</label>
+              <select id="inputSessionDuration" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200">
+                <option value="0">Chạy liên tục trong khung giờ an toàn (Khuyên dùng)</option>
+                <option value="30">Tự dừng sau 30 phút</option>
+                <option value="60">Tự dừng sau 1 tiếng</option>
+                <option value="120">Tự dừng sau 2 tiếng</option>
+                <option value="240">Tự dừng sau 4 tiếng</option>
+              </select>
             </div>
 
             <div class="grid grid-cols-2 gap-3">

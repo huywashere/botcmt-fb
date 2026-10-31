@@ -52,6 +52,7 @@ async function loadConfig() {
       if (document.getElementById('inputMinDelay')) document.getElementById('inputMinDelay').value = settings.min_delay || '120';
       if (document.getElementById('inputMaxDelay')) document.getElementById('inputMaxDelay').value = settings.max_delay || '300';
       if (document.getElementById('inputDailyLimit')) document.getElementById('inputDailyLimit').value = settings.daily_limit || '25';
+      if (document.getElementById('inputSessionDuration')) document.getElementById('inputSessionDuration').value = settings.session_duration_minutes || '0';
       if (document.getElementById('inputActiveStart')) document.getElementById('inputActiveStart').value = settings.active_start || '08:00';
       if (document.getElementById('inputActiveEnd')) document.getElementById('inputActiveEnd').value = settings.active_end || '23:00';
 
@@ -110,6 +111,7 @@ async function saveAllSettings() {
     min_delay: document.getElementById('inputMinDelay').value,
     max_delay: document.getElementById('inputMaxDelay').value,
     daily_limit: document.getElementById('inputDailyLimit').value,
+    session_duration_minutes: document.getElementById('inputSessionDuration').value,
     active_start: document.getElementById('inputActiveStart').value,
     active_end: document.getElementById('inputActiveEnd').value,
   };
