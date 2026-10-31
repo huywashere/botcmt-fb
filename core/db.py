@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import json
+import csv
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bot_database.db")
@@ -142,6 +143,23 @@ def get_recent_logs(limit=50):
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def export_logs_to_csv(filepath=None):
+    """Xuất toàn bộ lịch sử bình luận ra file CSV tương thích tốt với Excel tiếng Việt"""
+    if not filepath:
+        filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lich_su_comment.csv")
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM comment_logs ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    with open(filepath, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(["ID", "URL Bài Viết", "Trích Đoạn Bài Gốc", "Nội Dung Bình Luận", "Tên Page", "Trạng Thái", "Lỗi", "Thời Gian"])
+        for r in rows:
+            writer.writerow([r["id"], r["post_url"], r["post_snippet"], r["comment_content"], r["page_name"], r["status"], r["error_message"], r["created_at"]])
+    return filepath
 
 def is_post_already_commented(post_url):
     conn = get_db()

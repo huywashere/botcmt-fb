@@ -189,6 +189,17 @@ class BrowserEngine:
             self.page.evaluate(f"window.scrollBy(0, {random.randint(200, 450)})")
             time.sleep(random.uniform(2, 4))
 
+            # Thả Like nhẹ như người dùng thật (Warm-up Like chống bot detection)
+            auto_like = get_setting("auto_like_enabled", "1") == "1"
+            if auto_like:
+                try:
+                    like_btn = self.page.locator('div[aria-label="Thích"], div[aria-label="Like"], div[role="button"]:has-text("Thích")').first
+                    if like_btn.count() > 0 and like_btn.is_visible():
+                        like_btn.click()
+                        time.sleep(random.uniform(1.2, 2.5))
+                except Exception:
+                    pass
+
             # Tìm ô bình luận trên Facebook (hỗ trợ nhiều selector)
             comment_selectors = [
                 'div[aria-label*="Viết bình luận"]',
@@ -283,4 +294,54 @@ class BrowserEngine:
             return True, "Giữ nguyên profile hiện tại"
         except Exception as e:
             return False, f"Không thể tự động switch page: {str(e)}"
+
+    def scan_group_posts(self, group_url, max_posts=6):
+        """Quét các bài viết mới nhất trong Hội Nhóm Facebook (Group)"""
+        if not self.page:
+            self.start()
+
+        posts = []
+        try:
+            self.page.goto(group_url, timeout=45000)
+            time.sleep(4)
+
+            for _ in range(3):
+                self.page.evaluate("window.scrollBy(0, 700)")
+                time.sleep(random.uniform(1.8, 2.8))
+
+            articles = self.page.locator('div[role="feed"] > div, div[role="article"]').all()
+            for article in articles:
+                if len(posts) >= max_posts:
+                    break
+
+                text = article.inner_text().strip()
+                if len(text) < 25:
+                    continue
+
+                lines = [l.strip() for l in text.split("\n") if l.strip()]
+                filtered_lines = [l for l in lines if l not in ["Thích", "Bình luận", "Chia sẻ", "Gửi", "Like", "Comment", "Share"]]
+                clean_text = " ".join(filtered_lines[:10])
+
+                post_url = ""
+                links = article.locator("a").all()
+                for link in links:
+                    href = link.get_attribute("href") or ""
+                    if "/posts/" in href or "/permalink/" in href:
+                        post_url = href.split("?")[0]
+                        if not post_url.startswith("http"):
+                            post_url = "https://www.facebook.com" + post_url
+                        break
+
+                if not post_url:
+                    post_url = f"{group_url}#post_{abs(hash(clean_text[:60]))}"
+
+                if not is_post_already_commented(post_url):
+                    posts.append({
+                        "url": post_url,
+                        "content": clean_text[:400],
+                        "source": "Group"
+                    })
+        except Exception as e:
+            print("Lỗi quét Group:", str(e))
+        return posts
 

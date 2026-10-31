@@ -55,6 +55,8 @@ async function loadConfig() {
       if (document.getElementById('inputSessionDuration')) document.getElementById('inputSessionDuration').value = settings.session_duration_minutes || '0';
       if (document.getElementById('inputActiveStart')) document.getElementById('inputActiveStart').value = settings.active_start || '08:00';
       if (document.getElementById('inputActiveEnd')) document.getElementById('inputActiveEnd').value = settings.active_end || '23:00';
+      if (document.getElementById('inputTargetGroup')) document.getElementById('inputTargetGroup').value = settings.target_group_url || '';
+      if (document.getElementById('inputAutoLike')) document.getElementById('inputAutoLike').checked = (settings.auto_like_enabled !== '0');
 
       // Update preview lines in newsfeed
       renderSpintaxPreview(settings.spintax_samples || '');
@@ -114,6 +116,8 @@ async function saveAllSettings() {
     session_duration_minutes: document.getElementById('inputSessionDuration').value,
     active_start: document.getElementById('inputActiveStart').value,
     active_end: document.getElementById('inputActiveEnd').value,
+    target_group_url: document.getElementById('inputTargetGroup') ? document.getElementById('inputTargetGroup').value : '',
+    auto_like_enabled: (document.getElementById('inputAutoLike') && document.getElementById('inputAutoLike').checked) ? '1' : '0',
   };
   await window.pywebview.api.save_settings(payload);
   showToast("Đã lưu cài đặt hệ thống!");
@@ -174,11 +178,28 @@ function updateFeedSource(val) {
   showToast(`Đã đổi nguồn bài viết: ${val}`);
 }
 
-function openTargetUrlModal() {
-  const url = prompt("Nhập link bài viết Facebook hoặc Group cần quét:");
-  if (url) {
-    window.pywebview.api.add_target_url(url);
-    showToast("Đã thêm URL vào danh sách quét!");
+async function openTargetUrlModal() {
+  const input = prompt("Nhập link bài viết Facebook cần cmt (Nếu có nhiều link, có thể dán cách nhau bằng khoảng trắng hoặc xuống dòng):");
+  if (input) {
+    const urls = input.split(/[\s,]+/).filter(u => u.trim().startsWith("http"));
+    if (urls.length > 0) {
+      for (const u of urls) {
+        await window.pywebview.api.add_target_url(u.trim());
+      }
+      showToast(`Đã thêm ${urls.length} bài viết vào danh sách cmt!`);
+    } else {
+      showToast("URL không hợp lệ (cần bắt đầu bằng https://...)", true);
+    }
+  }
+}
+
+async function exportLogsCSV() {
+  showToast("Đang xuất lịch sử ra file Excel/CSV...");
+  const res = await window.pywebview.api.export_csv();
+  if (res && res.success) {
+    showToast(`Xuất file thành công: ${res.path}`);
+  } else {
+    showToast("Không thể xuất file CSV", true);
   }
 }
 

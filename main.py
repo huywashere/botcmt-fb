@@ -13,7 +13,7 @@ import webview
 from datetime import datetime
 from core.db import (
     init_db, get_setting, set_setting, get_all_settings,
-    get_recent_logs, log_comment, add_target_url
+    get_recent_logs, log_comment, add_target_url, export_logs_to_csv
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
@@ -118,6 +118,18 @@ class DesktopAPI:
             add_target_url(url.strip())
             return True
         return False
+
+    def add_bulk_target_urls(self, urls_text):
+        """Thêm hàng loạt link bài viết từ danh sách cách nhau bằng xuống dòng"""
+        lines = [u.strip() for u in urls_text.split("\n") if u.strip().startswith("http")]
+        for u in lines:
+            add_target_url(u)
+        return len(lines)
+
+    def export_csv(self):
+        """Xuất lịch sử cmt ra file CSV và mở vị trí file"""
+        path = export_logs_to_csv()
+        return {"success": True, "path": path}
 
 def main():
     # 1. Khởi tạo cơ sở dữ liệu SQLite

@@ -127,6 +127,14 @@ class BotWorker:
                             "content": content,
                             "source": "Custom URL"
                         })
+                elif source_type == "groups":
+                    group_url = get_setting("target_group_url", "").strip()
+                    if group_url:
+                        self.notify_ui("status", f"Đang quét bài viết mới trong Nhóm: {group_url[:35]}...")
+                        posts = self.browser.scan_group_posts(group_url, max_posts=6)
+                    else:
+                        self.notify_ui("status", "Chưa nhập link Group Facebook mục tiêu. Tự động chuyển quét Newsfeed...")
+                        posts = self.browser.scan_newsfeed_posts(max_posts=6)
                 else:
                     self.notify_ui("status", "Đang quét bài viết mới trên Facebook...")
                     posts = self.browser.scan_newsfeed_posts(max_posts=6)
