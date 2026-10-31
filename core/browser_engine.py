@@ -249,98 +249,102 @@ class BrowserEngine:
                 self.page.goto("https://www.facebook.com", timeout=45000)
                 time.sleep(4)
 
-            # Cuộn trang nhẹ nhàng để tải nhiều bài viết phong phú
-            for _ in range(4):
-                self.page.evaluate("window.scrollBy(0, 800)")
-                time.sleep(random.uniform(1.2, 1.8))
+            seen_urls = set()
+            # Cuộn sâu nhiều đợt nếu các bài đầu đã từng bình luận
+            for scroll_round in range(3):
+                for _ in range(4):
+                    self.page.evaluate("window.scrollBy(0, 850)")
+                    time.sleep(random.uniform(1.0, 1.6))
 
-            # Trích xuất bài viết qua DOM traversal tối ưu, quét từ các điểm neo hành động
-            extracted = self.page.evaluate("""() => {
-                const results = [];
-                // Quét qua nút Bình luận và nút Hành động trên feed
-                const cmtButtons = Array.from(document.querySelectorAll('[aria-label*="Bình luận"], [aria-label*="Comment"]'));
-                const actionButtons = Array.from(document.querySelectorAll('[aria-label*="Hành động đối với bài viết"], [aria-label*="Actions for this post"]'));
-                
-                const anchors = [...cmtButtons, ...actionButtons];
-                const seenCards = new Set();
+                # Trích xuất bài viết qua DOM traversal tối ưu, quét từ các điểm neo hành động
+                extracted = self.page.evaluate("""() => {
+                    const results = [];
+                    // Quét qua nút Bình luận và nút Hành động trên feed
+                    const cmtButtons = Array.from(document.querySelectorAll('[aria-label*="Bình luận"], [aria-label*="Comment"]'));
+                    const actionButtons = Array.from(document.querySelectorAll('[aria-label*="Hành động đối với bài viết"], [aria-label*="Actions for this post"]'));
+                    
+                    const anchors = [...cmtButtons, ...actionButtons];
+                    const seenCards = new Set();
 
-                for (const anchor of anchors) {
-                    let card = anchor;
-                    for (let i = 0; i < 14; i++) {
-                        if (card && card.parentElement && card.parentElement.tagName !== 'BODY') {
-                            const txt = card.innerText || '';
-                            if (txt.length > 50 && (txt.includes('Thích') || txt.includes('Like') || txt.includes('Chia sẻ') || txt.includes('Share'))) {
-                                break;
+                    for (const anchor of anchors) {
+                        let card = anchor;
+                        for (let i = 0; i < 14; i++) {
+                            if (card && card.parentElement && card.parentElement.tagName !== 'BODY') {
+                                const txt = card.innerText || '';
+                                if (txt.length > 50 && (txt.includes('Thích') || txt.includes('Like') || txt.includes('Chia sẻ') || txt.includes('Share'))) {
+                                    break;
+                                }
+                                card = card.parentElement;
                             }
-                            card = card.parentElement;
                         }
-                    }
 
-                    if (!card || seenCards.has(card)) continue;
-                    seenCards.add(card);
+                        if (!card || seenCards.has(card)) continue;
+                        seenCards.add(card);
 
-                    // Tìm link bài viết (permalink, posts, photo, videos, watch, story)
-                    const links = Array.from(card.querySelectorAll('a')).map(a => a.href).filter(Boolean);
-                    let postUrl = links.find(h => 
-                        (h.includes('/posts/') || h.includes('/videos/') || h.includes('story_fbid') || 
-                         h.includes('/permalink/') || h.includes('/photo') || (h.includes('/watch') && !h.includes('/hashtag/'))) &&
-                        !h.includes('/stories/') && !h.includes('/story.php') && !h.includes('/hashtag/') &&
-                        !h.includes('/latest/inbox') && !h.includes('/ad_center') && !h.includes('business.facebook.com')
-                    );
-
-                    // Nếu chưa thấy, tìm link timestamp có cấu trúc bài viết thực thụ
-                    if (!postUrl) {
-                        const timeLink = card.querySelector('a[role="link"][tabindex="0"]');
-                        if (timeLink && timeLink.href && (timeLink.href.includes('/posts/') || timeLink.href.includes('/photo') || timeLink.href.includes('/permalink/') || timeLink.href.includes('/videos/') || timeLink.href.includes('fbid=') || timeLink.href.includes('/reel/'))) {
-                            postUrl = timeLink.href;
-                        }
-                    }
-
-                    // Tách nội dung văn bản bài viết
-                    const lines = (card.innerText || '').split('\\n')
-                        .map(l => l.trim())
-                        .filter(l => l.length > 0 && 
-                            !['Facebook', 'Thích', 'Bình luận', 'Chia sẻ', 'Like', 'Comment', 'Share', 'Gửi', 'Xem thêm', '...'].includes(l) &&
-                            !l.startsWith('Đã bày tỏ cảm xúc') && !l.startsWith('Bình luận về bài viết') && !l.startsWith('Comment on')
+                        // Tìm link bài viết (permalink, posts, photo, videos, watch, story)
+                        const links = Array.from(card.querySelectorAll('a')).map(a => a.href).filter(Boolean);
+                        let postUrl = links.find(h => 
+                            (h.includes('/posts/') || h.includes('/videos/') || h.includes('story_fbid') || 
+                             h.includes('/permalink/') || h.includes('/photo') || (h.includes('/watch') && !h.includes('/hashtag/'))) &&
+                            !h.includes('/stories/') && !h.includes('/story.php') && !h.includes('/hashtag/') &&
+                            !h.includes('/latest/inbox') && !h.includes('/ad_center') && !h.includes('business.facebook.com')
                         );
 
-                    const cleanText = lines.slice(0, 10).join(' ');
-                    if (cleanText.length < 15) continue;
+                        // Nếu chưa thấy, tìm link timestamp có cấu trúc bài viết thực thụ
+                        if (!postUrl) {
+                            const timeLink = card.querySelector('a[role="link"][tabindex="0"]');
+                            if (timeLink && timeLink.href && (timeLink.href.includes('/posts/') || timeLink.href.includes('/photo') || timeLink.href.includes('/permalink/') || timeLink.href.includes('/videos/') || timeLink.href.includes('fbid=') || timeLink.href.includes('/reel/'))) {
+                                postUrl = timeLink.href;
+                            }
+                        }
 
-                    // Tìm ảnh đính kèm bài viết nếu có (cho Gemini Multimodal Vision)
-                    const img = card.querySelector('img[src*="scontent"], img[src*="fbcdn"]');
-                    const imgUrl = img ? img.src : '';
+                        // Tách nội dung văn bản bài viết
+                        const lines = (card.innerText || '').split('\\n')
+                            .map(l => l.trim())
+                            .filter(l => l.length > 0 && 
+                                !['Facebook', 'Thích', 'Bình luận', 'Chia sẻ', 'Like', 'Comment', 'Share', 'Gửi', 'Xem thêm', '...'].includes(l) &&
+                                !l.startsWith('Đã bày tỏ cảm xúc') && !l.startsWith('Bình luận về bài viết') && !l.startsWith('Comment on')
+                            );
 
-                    results.push({
-                        url: postUrl ? postUrl.split('?')[0] : '',
-                        fullUrl: postUrl || '',
-                        content: cleanText.slice(0, 400),
-                        image_url: imgUrl
-                    });
-                }
-                return results;
-            }""")
+                        const cleanText = lines.slice(0, 10).join(' ');
+                        if (cleanText.length < 15) continue;
 
-            seen_urls = set()
-            for item in extracted:
+                        // Tìm ảnh đính kèm bài viết nếu có (cho Gemini Multimodal Vision)
+                        const img = card.querySelector('img[src*="scontent"], img[src*="fbcdn"]');
+                        const imgUrl = img ? img.src : '';
+
+                        results.push({
+                            url: postUrl ? postUrl.split('?')[0] : '',
+                            fullUrl: postUrl || '',
+                            content: cleanText.slice(0, 400),
+                            image_url: imgUrl
+                        });
+                    }
+                    return results;
+                }""")
+
+                for item in extracted:
+                    if len(posts) >= max_posts:
+                        break
+                    raw_url = item.get("fullUrl") or item.get("url") or ""
+                    p_url = BrowserEngine.clean_facebook_url(raw_url)
+                    if not p_url or not BrowserEngine.is_valid_post_url(p_url):
+                        p_url = f"https://www.facebook.com/post_snippet_{abs(hash(item['content'][:60]))}"
+
+                    if p_url in seen_urls:
+                        continue
+                    seen_urls.add(p_url)
+
+                    if not is_post_already_commented(p_url):
+                        posts.append({
+                            "url": p_url,
+                            "content": item["content"],
+                            "image_url": item.get("image_url", ""),
+                            "source": "Newsfeed"
+                        })
+
                 if len(posts) >= max_posts:
                     break
-                raw_url = item.get("fullUrl") or item.get("url") or ""
-                p_url = BrowserEngine.clean_facebook_url(raw_url)
-                if not p_url or not BrowserEngine.is_valid_post_url(p_url):
-                    p_url = f"https://www.facebook.com/post_snippet_{abs(hash(item['content'][:60]))}"
-
-                if p_url in seen_urls:
-                    continue
-                seen_urls.add(p_url)
-
-                if not is_post_already_commented(p_url):
-                    posts.append({
-                        "url": p_url,
-                        "content": item["content"],
-                        "image_url": item.get("image_url", ""),
-                        "source": "Newsfeed"
-                    })
         except Exception as e:
             print("Lỗi khi quét Newsfeed:", str(e))
 

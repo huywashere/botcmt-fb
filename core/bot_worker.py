@@ -282,29 +282,36 @@ class BotWorker:
                             self.browser.switch_to_fanpage(next_page)
                             current_page_comments_count = 0
 
-                    # Nghỉ ngẫu nhiên giữa 2 lần bình luận (Jitter)
-                    min_d = int(get_setting("min_delay", "150"))
-                    max_d = int(get_setting("max_delay", "360"))
+                    # Nghỉ ngẫu nhiên giữa 2 lần bình luận (~2 phút theo cấu hình)
+                    min_d = int(get_setting("min_delay", "110"))
+                    max_d = int(get_setting("max_delay", "130"))
                     delay_time = random.randint(min_d, max_d)
 
                     for sec in range(delay_time, 0, -1):
                         if not self.is_running:
                             break
-                        self.notify_ui("countdown", f"Chờ bài tiếp theo: {sec}s")
+                        mins = sec // 60
+                        s = sec % 60
+                        self.notify_ui("countdown", f"Chờ bài tiếp theo: {mins}p {s:02d}s")
                         time.sleep(1)
 
-                # Sau khi hết lượt bài, chờ theo scan_interval
-                scan_minutes = int(get_setting("scan_interval", "5"))
+                # Sau khi hết lượt bài, chờ theo scan_interval (nếu không có bài mới chỉ chờ 15s để cuộn tiếp)
+                scan_minutes = int(get_setting("scan_interval", "2"))
+                wait_seconds = (scan_minutes * 60) if commented_this_round > 0 else 15
                 if commented_this_round == 0:
-                    if not posts:
-                        self.notify_ui("status", f"Chưa tìm thấy bài viết mới trên bảng tin trong lượt này. Lần quét tiếp theo sau {scan_minutes} phút...")
-                    else:
-                        self.notify_ui("status", f"Các bài quét được đã bình luận trước đó hoặc chưa khớp tiêu chí. Lần quét tiếp sau {scan_minutes} phút...")
+                    self.notify_ui("status", "Đang cuộn sâu tìm các bài viết mới chưa từng bình luận...")
                 else:
-                    self.notify_ui("status", f"Đã hoàn thành bình luận {commented_this_round} bài viết. Lần quét tiếp theo sau {scan_minutes} phút...")
-                for sec in range(scan_minutes * 60, 0, -1):
+                    self.notify_ui("status", f"Đã bình luận xong lượt này ({commented_this_round} bài). Lần quét tiếp sau {scan_minutes} phút...")
+
+                for sec in range(wait_seconds, 0, -1):
                     if not self.is_running:
                         break
+                    mins = sec // 60
+                    s = sec % 60
+                    if mins > 0:
+                        self.notify_ui("countdown", f"Lượt quét tiếp: {mins}p {s:02d}s")
+                    else:
+                        self.notify_ui("countdown", f"Lượt quét tiếp: {sec}s")
                     time.sleep(1)
 
             if self.browser:
