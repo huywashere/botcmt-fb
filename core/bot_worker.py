@@ -43,8 +43,8 @@ class BotWorker:
     def scan_only(self):
         """Chức năng 'Quét thử - chưa gửi' để xem trước danh sách bài và cmt dự kiến"""
         def _job():
-            self.notify_ui("status", "Đang mở trình duyệt quét bài...")
-            browser = BrowserEngine(headless=False)
+            self.notify_ui("status", "Đang quét bài viết ngầm...")
+            browser = BrowserEngine(headless=True)
             try:
                 posts = browser.scan_newsfeed_posts(max_posts=5)
                 self.last_scanned_posts = []
@@ -83,8 +83,8 @@ class BotWorker:
         self.notify_ui("auto_state_changed", True)
 
         def _loop():
-            self.browser = BrowserEngine(headless=False)
-            self.notify_ui("status", "Hệ thống tự động bình luận đã khởi động...")
+            self.browser = BrowserEngine(headless=True)
+            self.notify_ui("status", "Hệ thống tự động bình luận đã khởi động ngầm...")
             
             session_start_time = time.time()
             consecutive_errors = 0

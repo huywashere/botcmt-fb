@@ -96,7 +96,7 @@ class BrowserEngine:
         except Exception:
             return url.split('?')[0] if url else ""
 
-    def __init__(self, headless=False, proxy=None):
+    def __init__(self, headless=True, proxy=None):
         self.headless = headless
         # Tự động lấy proxy từ settings nếu không truyền vào
         if not proxy:
@@ -107,7 +107,7 @@ class BrowserEngine:
         self.page = None
 
     def start(self):
-        """Khởi động trình duyệt với user-data-dir để lưu trữ session vĩnh viễn"""
+        """Khởi động trình duyệt với user-data-dir để lưu trữ session vĩnh viễn (Chạy ngầm 100%)"""
         # Nếu có instance trước đó đang giữ lock, đóng trước
         if BrowserEngine._active_instance and BrowserEngine._active_instance != self:
             try:
@@ -152,8 +152,21 @@ class BrowserEngine:
 
         if len(self.context.pages) > 0:
             self.page = self.context.pages[0]
+            # Tự động đóng tất cả các tab thừa được Chrome khôi phục (như tab Meta Business Suite)
+            for p in self.context.pages[1:]:
+                try:
+                    p.close()
+                except Exception:
+                    pass
         else:
             self.page = self.context.new_page()
+
+        # Đảm bảo tab không bị kẹt ở business.facebook.com
+        try:
+            if "business.facebook.com" in (self.page.url or ""):
+                self.page.goto("https://www.facebook.com", timeout=30000)
+        except Exception:
+            pass
 
         # Áp dụng stealth script tránh phát hiện bot
         self.page.add_init_script("""
