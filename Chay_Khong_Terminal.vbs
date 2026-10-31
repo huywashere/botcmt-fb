@@ -1,7 +1,9 @@
-Set WshShell = CreateObject("WScript.Shell")
+Dim WshShell, fso, currentDir
 Set fso = CreateObject("Scripting.FileSystemObject")
-scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
-WshShell.CurrentDirectory = scriptDir
+currentDir = fso.GetParentFolderName(WScript.ScriptFullName)
 
-' 0 = SW_HIDE (ẩn cửa sổ đen hoàn toàn), False = không đợi kết thúc
-WshShell.Run "python """ & scriptDir & "\main.py""", 0, False
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.CurrentDirectory = currentDir
+
+' Chạy ngầm 100% không mở màn hình đen
+WshShell.Run "cmd /c start """" pythonw """ & currentDir & "\main.py""", 0, False

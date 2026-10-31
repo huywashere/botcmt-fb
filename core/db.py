@@ -113,7 +113,7 @@ def init_db():
     }
 
     for k, v in default_settings.items():
-        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, v))
+        cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
 
     # Đảm bảo có ít nhất Fanpage Flex Phim mặc định
     cursor.execute("SELECT COUNT(*) as cnt FROM fanpages")
