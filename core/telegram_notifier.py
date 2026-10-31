@@ -39,3 +39,4 @@ class TelegramNotifier:
             "Hệ thống sẽ gửi thông báo mỗi khi bot bình luận hoặc gặp cảnh báo an toàn."
         )
         return TelegramNotifier.send_message(msg, bot_token, chat_id)
+

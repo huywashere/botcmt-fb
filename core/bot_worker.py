@@ -95,6 +95,11 @@ class BotWorker:
             current_page_comments_count = 0
             rotate_threshold = int(get_setting("rotate_every_n_comments", "5"))
 
+            # Chế độ làm ấm session (Pre-Action Warm-Up)
+            if get_setting("warmup_enabled", "1") == "1":
+                self.notify_ui("status", "Đang thực hiện làm ấm session (Warm-Up lướt nhẹ 45s như người thật)...")
+                self.browser.run_warmup(duration_sec=45)
+
             while self.is_running:
                 # 1. Kiểm tra hẹn giờ phiên chạy (Session Duration)
                 duration_mins = int(get_setting("session_duration_minutes", "0"))
@@ -135,10 +140,11 @@ class BotWorker:
                     for item in pending_targets:
                         target_url = item["post_url"]
                         self.notify_ui("status", f"Đang trích xuất nội dung bài: {target_url[:35]}...")
-                        content = self.browser.extract_single_post_content(target_url)
+                        data = self.browser.extract_single_post_content(target_url)
                         posts.append({
                             "url": target_url,
-                            "content": content,
+                            "content": data.get("content", ""),
+                            "image_url": data.get("image_url", ""),
                             "source": "Custom URL"
                         })
                 elif source_type == "groups":
@@ -195,9 +201,9 @@ class BotWorker:
                     # Xác định Fanpage đại diện đang active
                     current_fanpage_name = fanpages[current_page_idx] if fanpages else "Fanpage"
 
-                    # Sinh bình luận thông minh bằng Gemini / Spintax
-                    self.notify_ui("status", f"AI đang phân tích ngữ cảnh bài viết cho '{current_fanpage_name}'...")
-                    comment_text = AIEngine.generate_comment(post_content, current_fanpage_name)
+                    # Sinh bình luận thông minh bằng Gemini Vision / Text / Spintax
+                    self.notify_ui("status", f"AI đang phân tích ngữ cảnh & hình ảnh bài viết cho '{current_fanpage_name}'...")
+                    comment_text = AIEngine.generate_comment(post_content, current_fanpage_name, image_url=p.get("image_url", ""))
 
                     # Gửi thông tin về UI
                     self.notify_ui("current_processing", {

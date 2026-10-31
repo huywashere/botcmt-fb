@@ -18,3 +18,4 @@ echo   HOAN TAT!
 echo File .exe da duoc tao trong thu muc: dist\FacebookAutoCommenter\
 echo ========================================================
 pause
+

@@ -68,6 +68,12 @@ async function loadConfig() {
       if (document.getElementById('inputTelegramChatId')) document.getElementById('inputTelegramChatId').value = settings.telegram_chat_id || '';
       if (document.getElementById('inputTelegramAlerts')) document.getElementById('inputTelegramAlerts').checked = (settings.telegram_alerts_enabled === '1');
 
+      // Cấu hình Proxy và 4 vũ khí tối ưu
+      if (document.getElementById('inputProxy')) document.getElementById('inputProxy').value = settings.proxy_string || '';
+      if (document.getElementById('inputLinkCloak')) document.getElementById('inputLinkCloak').checked = (settings.link_cloaking_enabled !== '0');
+      if (document.getElementById('inputGeminiVision')) document.getElementById('inputGeminiVision').checked = (settings.gemini_vision_enabled !== '0');
+      if (document.getElementById('inputWarmup')) document.getElementById('inputWarmup').checked = (settings.warmup_enabled !== '0');
+
       // Update preview lines in newsfeed
       renderSpintaxPreview(settings.spintax_samples || '');
     }
@@ -131,9 +137,33 @@ async function saveAllSettings() {
     telegram_bot_token: document.getElementById('inputTelegramToken') ? document.getElementById('inputTelegramToken').value : '',
     telegram_chat_id: document.getElementById('inputTelegramChatId') ? document.getElementById('inputTelegramChatId').value : '',
     telegram_alerts_enabled: (document.getElementById('inputTelegramAlerts') && document.getElementById('inputTelegramAlerts').checked) ? '1' : '0',
+    link_cloaking_enabled: (document.getElementById('inputLinkCloak') && document.getElementById('inputLinkCloak').checked) ? '1' : '0',
+    gemini_vision_enabled: (document.getElementById('inputGeminiVision') && document.getElementById('inputGeminiVision').checked) ? '1' : '0',
+    warmup_enabled: (document.getElementById('inputWarmup') && document.getElementById('inputWarmup').checked) ? '1' : '0',
   };
   await window.pywebview.api.save_settings(payload);
-  showToast("Đã lưu cài đặt hệ thống & Telegram!");
+  showToast("Đã lưu cài đặt hệ thống & tối ưu!");
+}
+
+async function saveProxy() {
+  const proxyStr = document.getElementById('inputProxy') ? document.getElementById('inputProxy').value.trim() : '';
+  await window.pywebview.api.set_setting("proxy_string", proxyStr);
+  showToast("Đã lưu cấu hình Proxy an toàn!");
+}
+
+async function testProxy() {
+  const proxyStr = document.getElementById('inputProxy') ? document.getElementById('inputProxy').value.trim() : '';
+  if (!proxyStr) {
+    showToast("Vui lòng nhập chuỗi Proxy (IP:Port hoặc IP:Port:User:Pass)", true);
+    return;
+  }
+  showToast("Đang kiểm tra kết nối qua Proxy...");
+  const res = await window.pywebview.api.test_proxy(proxyStr);
+  if (res && res.success) {
+    showToast(res.message);
+  } else {
+    showToast("Lỗi Proxy: " + (res ? res.message : "Không thể kết nối"), true);
+  }
 }
 
 async function testTelegram() {

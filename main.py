@@ -55,6 +55,9 @@ class DesktopAPI:
         success, msg = TelegramNotifier.test_connection(bot_token, chat_id)
         return {"success": success, "message": msg}
 
+    def test_proxy(self, proxy_str):
+        return BrowserEngine.test_proxy(proxy_str)
+
     def open_login_browser(self):
         """Mở cửa sổ Chrome thật để người dùng tự do đăng nhập và quản lý Fanpage an toàn"""
         if self.login_browser is None:

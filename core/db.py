@@ -104,7 +104,12 @@ def init_db():
         "comment_mode": "both",      # "post" (bình luận bài), "reply" (ưu tiên trả lời cmt người hỏi), "both"
         "fanpage_rotation_list": "Vườn Phim",  # Danh sách tên các Fanpage cần xoay vòng (cách nhau bởi dấu phẩy)
         "rotate_every_n_comments": "5",       # Số cmt trước khi đổi sang Page tiếp theo
-        "target_group_url": ""
+        "target_group_url": "",
+        # 4 Vũ khí tối ưu đỉnh cao:
+        "link_cloaking_enabled": "1",    # Tự động lách link chống Facebook Ghostban
+        "gemini_vision_enabled": "1",    # Gemini Multimodal Vision đọc ảnh poster bài viết
+        "warmup_enabled": "1",           # Làm ấm session 45s trước khi cmt
+        "proxy_string": ""               # Cấu hình Proxy riêng (IP:Port:User:Pass)
     }
 
     for k, v in default_settings.items():

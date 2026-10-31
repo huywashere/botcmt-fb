@@ -12,8 +12,64 @@ os.makedirs(DATA_DIR, exist_ok=True)
 class BrowserEngine:
     _active_instance = None
 
+    @staticmethod
+    def parse_proxy(proxy_str):
+        """Chuẩn hóa cấu hình proxy hỗ trợ IP:Port:User:Pass hoặc http://..."""
+        if not proxy_str or not proxy_str.strip():
+            return None
+        proxy_str = proxy_str.strip()
+        parts = proxy_str.split(":")
+        if len(parts) == 4:
+            ip, port, user, pwd = parts
+            return {
+                "server": f"http://{ip}:{port}",
+                "username": user,
+                "password": pwd
+            }
+        if "@" in proxy_str:
+            clean = proxy_str.replace("http://", "").replace("https://", "")
+            auth, host = clean.split("@")
+            user, pwd = auth.split(":")
+            return {
+                "server": f"http://{host}",
+                "username": user,
+                "password": pwd
+            }
+        if not proxy_str.startswith("http"):
+            proxy_str = f"http://{proxy_str}"
+        return {"server": proxy_str}
+
+    @staticmethod
+    def test_proxy(proxy_str):
+        """Kiểm tra địa chỉ IP thực tế qua Proxy"""
+        cfg = BrowserEngine.parse_proxy(proxy_str)
+        if not cfg:
+            return {"success": False, "message": "Định dạng Proxy không hợp lệ"}
+        try:
+            if "username" in cfg and "password" in cfg:
+                server = cfg["server"].replace("http://", "")
+                proxies = {
+                    "http": f"http://{cfg['username']}:{cfg['password']}@{server}",
+                    "https": f"http://{cfg['username']}:{cfg['password']}@{server}"
+                }
+            else:
+                proxies = {
+                    "http": cfg["server"],
+                    "https": cfg["server"]
+                }
+            resp = requests.get("https://api.ipify.org?format=json", proxies=proxies, timeout=10)
+            if resp.status_code == 200:
+                ip = resp.json().get("ip", "")
+                return {"success": True, "ip": ip, "message": f"Proxy hoạt động! IP mới: {ip}"}
+            return {"success": False, "message": f"Proxy phản hồi mã {resp.status_code}"}
+        except Exception as e:
+            return {"success": False, "message": f"Lỗi kết nối Proxy: {str(e)}"}
+
     def __init__(self, headless=False, proxy=None):
         self.headless = headless
+        # Tự động lấy proxy từ settings nếu không truyền vào
+        if not proxy:
+            proxy = get_setting("proxy_string", "")
         self.proxy = proxy
         self.playwright = None
         self.context = None
@@ -40,9 +96,7 @@ class BrowserEngine:
             "--lang=vi-VN,vi,en-US,en"
         ]
 
-        proxy_config = None
-        if self.proxy and self.proxy.strip():
-            proxy_config = {"server": self.proxy.strip()}
+        proxy_config = BrowserEngine.parse_proxy(self.proxy)
 
         self.context = self.playwright.chromium.launch_persistent_context(
             user_data_dir=DATA_DIR,
@@ -157,10 +211,22 @@ class BrowserEngine:
                     # Nếu không tìm thấy link riêng, tạo id giả lập theo snippet
                     post_url = f"https://www.facebook.com/post_snippet_{abs(hash(clean_text[:60]))}"
 
+                # Tìm ảnh đính kèm bài viết nếu có (cho Gemini Multimodal Vision)
+                img_url = ""
+                try:
+                    for img in article.locator("img").all():
+                        src = img.get_attribute("src") or ""
+                        if "scontent" in src or "fbcdn" in src:
+                            img_url = src
+                            break
+                except Exception:
+                    pass
+
                 if not is_post_already_commented(post_url):
                     posts.append({
                         "url": post_url,
                         "content": clean_text[:400],
+                        "image_url": img_url,
                         "source": "Newsfeed"
                     })
         except Exception as e:
@@ -276,13 +342,23 @@ class BrowserEngine:
             return self.comment_on_post(post_url, comment_text)
 
     def extract_single_post_content(self, post_url):
-        """Mở 1 link bài viết cụ thể và trích xuất nội dung bài viết"""
+        """Mở 1 link bài viết cụ thể và trích xuất nội dung bài viết kèm ảnh (nếu có)"""
         if not self.page:
             self.start()
 
         try:
             self.page.goto(post_url, timeout=45000)
             time.sleep(random.uniform(3, 5))
+
+            img_url = ""
+            try:
+                for img in self.page.locator('div[role="article"] img, div[data-ad-preview] img').all():
+                    src = img.get_attribute("src") or ""
+                    if "scontent" in src or "fbcdn" in src:
+                        img_url = src
+                        break
+            except Exception:
+                pass
 
             # Tìm nội dung bài viết
             selectors = [
@@ -295,13 +371,32 @@ class BrowserEngine:
                 if loc.count() > 0:
                     text = loc.inner_text().strip()
                     if len(text) > 15:
-                        return text[:500]
+                        return {"content": text[:500], "image_url": img_url}
 
             # Fallback lấy text trên body
             body_text = self.page.locator('body').inner_text()
-            return body_text[:300]
+            return {"content": body_text[:300], "image_url": img_url}
         except Exception as e:
-            return f"Không thể lấy nội dung bài viết: {str(e)}"
+            return {"content": f"Không thể lấy nội dung bài viết: {str(e)}", "image_url": ""}
+
+    def run_warmup(self, duration_sec=60):
+        """Mô phỏng người thật lướt xem tin tức 60s để làm ấm session (Pre-Action Warm-Up)"""
+        if not self.page:
+            self.start()
+        try:
+            self.page.goto("https://www.facebook.com", timeout=30000)
+            time.sleep(3)
+            start = time.time()
+            while time.time() - start < duration_sec:
+                scroll_y = random.randint(300, 600)
+                self.page.evaluate(f"window.scrollBy(0, {scroll_y})")
+                time.sleep(random.uniform(3.5, 7.0))
+                if random.random() < 0.3:
+                    self.page.evaluate("window.scrollBy(0, -200)")
+                    time.sleep(random.uniform(2.0, 4.0))
+            return True
+        except Exception:
+            return False
 
     def switch_to_fanpage(self, page_name=""):
         """Hỗ trợ chuyển đổi sang Profile Fanpage (New Page Experience)"""
