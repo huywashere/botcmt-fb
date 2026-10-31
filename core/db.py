@@ -86,10 +86,10 @@ def init_db():
         "min_delay": "150",          # Độ trễ tối thiểu an toàn (2.5 phút)
         "max_delay": "360",          # Độ trễ tối đa an toàn (6 phút)
         "topic": "Phim ảnh, review phim, phim bộ Hàn/Trung/Âu Mỹ, chia sẻ cảm nhận điện ảnh, gợi ý phim hay",
-        "persona": "Một bạn trẻ mê phim chính hiệu (mọt phim), xưng tui/mình thân mật, chia sẻ chân thực, tự nhiên như người dùng mạng xã hội thực thụ (dùng các từ: nè, nha, coi cuốn, web mượt lắm...)",
-        "brand_mention": "Vườn Phim => vuonphim chấm com",
+        "persona": "Một bạn trẻ mê phim chính hiệu (mọt phim), xưng tui/mình thân mật, chia sẻ chân thực, tự nhiên như người dùng mạng xã hội thực thụ (dùng các từ: nè, nha, coi cuốn, web mượt lắm... đại diện cho Flex Phim)",
+        "brand_mention": "Flex Phim => flexphim chấm top",
         "keywords": "phim, tập, diễn viên, mọt phim, xem ở đâu, review, netflix, bộ này, tên phim, chiếu rạp, sub, vietsub, thuyết minh, web phim",
-        "spintax_samples": "qua Vườn Phim thử đi nè, web bên tui làm á => vuonphim chấm com\nghé bên tui chơi thử xem sao nha, Vườn Phim nè => vuonphim chấm com\nbên tui là Vườn Phim nè, qua tìm thử phim bạn thích nha => vuonphim chấm com\nthử đổi gió qua Vườn Phim xem sao nè bạn ơi => vuonphim chấm com\ncoi bên Vườn Phim thử nha, nhà tui mới update á => vuonphim chấm com\nbên tui có bản đẹp nè, qua xem thử nha => vuonphim chấm com\nqua web bên tui ủng hộ nè, Vườn Phim á => vuonphim chấm com",
+        "spintax_samples": "qua Flex Phim thử đi nè, web bên tui làm á => flexphim chấm top\nghé bên tui chơi thử xem sao nha, Flex Phim nè => flexphim chấm top\nbên tui là Flex Phim nè, qua tìm thử phim bạn thích nha => flexphim chấm top\nthử đổi gió qua Flex Phim xem sao nè bạn ơi => flexphim chấm top\ncoi bên Flex Phim thử nha, nhà tui mới update á => flexphim chấm top\nbên tui có bản đẹp nè, qua xem thử nha => flexphim chấm top\nqua web bên tui ủng hộ nè, Flex Phim á => flexphim chấm top\nghé flexphim chấm top xem nha, mượt lắm á",
         "auto_comment_enabled": "0",
         "daily_limit": "25",         # Giới hạn an toàn chống ban tuyệt đối: tối đa 25 cmt/ngày
         "active_start": "08:00",     # Chỉ chạy từ 8h sáng
@@ -102,7 +102,7 @@ def init_db():
         "blacklist_keywords": "tuyển dụng, tuyển nv, bán hàng, giá rẻ, vay tiền, vay nhanh, scam, lừa đảo, cờ bạc, bóng đá, chính trị, 18+",
         "max_post_age_hours": "24",  # Chỉ cmt bài đăng trong vòng 24h
         "comment_mode": "both",      # "post" (bình luận bài), "reply" (ưu tiên trả lời cmt người hỏi), "both"
-        "fanpage_rotation_list": "Vườn Phim",  # Danh sách tên các Fanpage cần xoay vòng (cách nhau bởi dấu phẩy)
+        "fanpage_rotation_list": "Flex Phim",  # Danh sách tên các Fanpage cần xoay vòng (cách nhau bởi dấu phẩy)
         "rotate_every_n_comments": "5",       # Số cmt trước khi đổi sang Page tiếp theo
         "target_group_url": "",
         # 4 Vũ khí tối ưu đỉnh cao:
