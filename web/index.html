@@ -159,8 +159,8 @@
             <!-- Account dropdown -->
             <div class="flex items-center space-x-2">
               <span class="text-slate-400">Tài khoản:</span>
-              <select id="selectAccount" class="bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-brand-500">
-                <option value="fanpage_main">Fanpage Mặc định (Auto Switch)</option>
+              <select id="selectAccount" onchange="onAccountDropdownChange(this.value)" class="bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-brand-500 font-medium">
+                <option value="Flex Phim">Flex Phim (Đã kết nối)</option>
               </select>
             </div>
 
@@ -414,6 +414,32 @@
               Kiểm tra trạng thái đăng nhập
             </button>
             <span id="loginStatusIndicator" class="text-xs text-slate-400">Chưa kiểm tra</span>
+          </div>
+        </div>
+
+        <!-- Connected Fanpages Card -->
+        <div class="bg-dark-card border border-dark-border rounded-xl p-5 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+              <span>🚩</span>
+              <span>Fanpage đã kết nối (Chọn trang đại diện bình luận)</span>
+            </h3>
+            <div class="flex space-x-2">
+              <button onclick="scanFanpagesFromFB()" class="px-3 py-1.5 bg-[#252535] hover:bg-[#323245] text-slate-200 rounded-lg text-xs font-medium border border-dark-border flex items-center space-x-1">
+                <span>🔍</span>
+                <span>Tự động quét từ FB</span>
+              </button>
+              <button onclick="addManualFanpage()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium flex items-center space-x-1">
+                <span>+</span>
+                <span>Thêm Fanpage thủ công</span>
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Chọn Fanpage bạn muốn dùng làm danh tính đại diện đi bình luận. Bot sẽ tự động switch sang Page này khi thao tác.
+          </p>
+          <div id="fanpagesListContainer" class="space-y-2">
+            <!-- Dynamic Fanpage Cards -->
           </div>
         </div>
 

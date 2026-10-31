@@ -76,9 +76,106 @@ async function loadConfig() {
 
       // Update preview lines in newsfeed
       renderSpintaxPreview(settings.spintax_samples || '');
+
+      // Tải danh sách Fanpage đã kết nối
+      await loadFanpages();
     }
   } catch (err) {
     console.error("Lỗi tải cài đặt:", err);
+  }
+}
+
+// ==================== QUẢN LÝ KẾT NỐI FANPAGE ====================
+async function loadFanpages() {
+  if (!window.pywebview || !window.pywebview.api) return;
+  try {
+    const res = await window.pywebview.api.get_fanpages_list();
+    if (res) {
+      const pages = res.pages || [];
+      const selected = res.selected || (pages.length > 0 ? pages[0].page_name : "Flex Phim");
+
+      // Cập nhật Dropdown chọn tài khoản trên Newsfeed
+      const selectAccount = document.getElementById('selectAccount');
+      if (selectAccount && pages.length > 0) {
+        selectAccount.innerHTML = pages.map(p => `
+          <option value="${escapeHtml(p.page_name)}" ${p.page_name === selected ? 'selected' : ''}>
+            ${escapeHtml(p.page_name)} (Đã kết nối)
+          </option>
+        `).join('');
+      }
+
+      // Cập nhật Huy hiệu góc dưới bên trái
+      const footerName = document.getElementById('footerPageName');
+      if (footerName) {
+        footerName.innerText = selected;
+      }
+
+      // Render danh sách Fanpage trong tab Tài khoản & Page
+      const listContainer = document.getElementById('fanpagesListContainer');
+      if (listContainer) {
+        if (pages.length === 0) {
+          listContainer.innerHTML = '<p class="text-xs text-slate-500 italic py-2">Chưa có Fanpage nào được thêm. Hãy bấm "Tự động quét" hoặc "Thêm Fanpage thủ công".</p>';
+          return;
+        }
+        listContainer.innerHTML = pages.map(p => `
+          <div class="bg-dark-input border ${p.page_name === selected ? 'border-brand-500 bg-brand-950/20' : 'border-dark-border'} p-3 rounded-lg flex items-center justify-between transition">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-full ${p.page_name === selected ? 'bg-brand-600 text-white' : 'bg-zinc-800 text-slate-300'} flex items-center justify-center font-bold text-xs">
+                ${escapeHtml(p.page_name.substring(0, 2).toUpperCase())}
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-slate-200">${escapeHtml(p.page_name)}</p>
+                <p class="text-[11px] text-slate-500 truncate max-w-xs">${escapeHtml(p.page_url || 'https://www.facebook.com')}</p>
+              </div>
+            </div>
+            <div>
+              ${p.page_name === selected ? 
+                '<span class="px-2.5 py-1 text-[11px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 rounded-full">● Đang đại diện cmt</span>' : 
+                `<button onclick="selectActiveFanpage('${escapeHtml(p.page_name)}')" class="px-3 py-1 bg-[#252535] hover:bg-[#323245] text-slate-200 rounded text-xs border border-dark-border transition">Chọn trang này</button>`
+              }
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (err) {
+    console.error("Lỗi tải danh sách Fanpage:", err);
+  }
+}
+
+async function selectActiveFanpage(name) {
+  await window.pywebview.api.select_fanpage(name);
+  showToast(`Đã chọn Fanpage "${name}" làm đại diện bình luận!`);
+  loadFanpages();
+}
+
+async function onAccountDropdownChange(name) {
+  await window.pywebview.api.select_fanpage(name);
+  showToast(`Đã chuyển sang đại diện: ${name}`);
+  loadFanpages();
+}
+
+async function scanFanpagesFromFB() {
+  showToast("Đang mở trình duyệt quét danh sách Fanpage...");
+  const res = await window.pywebview.api.scan_fanpages_from_facebook();
+  if (res && res.success) {
+    showToast(`Quét hoàn tất! Tìm thấy ${res.count} Fanpage.`);
+    loadFanpages();
+  } else {
+    showToast("Không thể quét Fanpage. Hãy đảm bảo bạn đã đăng nhập Facebook trước.", true);
+  }
+}
+
+async function addManualFanpage() {
+  const name = prompt("Nhập Tên Fanpage của bạn (VD: Flex Phim):");
+  if (!name || !name.trim()) return;
+  const url = prompt("Nhập Link Fanpage (Tùy chọn, VD: https://facebook.com/flexphim):") || "";
+  const res = await window.pywebview.api.add_fanpage(name.trim(), url.trim());
+  if (res && res.success) {
+    showToast(`Đã kết nối Fanpage: ${res.name}`);
+    loadFanpages();
+  } else {
+    showToast("Lỗi: " + (res ? res.message : "Không thể thêm"), true);
   }
 }
 

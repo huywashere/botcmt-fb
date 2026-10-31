@@ -429,6 +429,35 @@ class BrowserEngine:
         except Exception as e:
             return False, f"Không thể tự động switch page: {str(e)}"
 
+    def scan_managed_fanpages(self):
+        """Tự động quét danh sách các Fanpage mà tài khoản đang quản lý trên Facebook"""
+        if not self.page:
+            self.start()
+
+        pages = []
+        try:
+            self.page.goto("https://www.facebook.com/pages/?category=your_pages", timeout=35000)
+            time.sleep(4)
+
+            # Lấy danh sách thẻ link đại diện cho các Fanpage của bạn
+            links = self.page.locator('div[role="main"] a[role="link"]').all()
+            found_names = set()
+            for l in links:
+                href = l.get_attribute("href") or ""
+                text = l.inner_text().strip()
+                if "/" in href and len(text) > 1 and text not in ["Trang chủ", "Home", "Video", "Nhóm", "Groups"]:
+                    lines = [line.strip() for line in text.split("\n") if line.strip()]
+                    if lines and lines[0] not in found_names and len(lines[0]) < 60:
+                        page_name = lines[0]
+                        found_names.add(page_name)
+                        clean_url = href.split("?")[0]
+                        if not clean_url.startswith("http"):
+                            clean_url = "https://www.facebook.com" + clean_url
+                        pages.append({"name": page_name, "url": clean_url})
+        except Exception as e:
+            print("Lỗi quét Fanpage:", str(e))
+        return pages
+
     def scan_group_posts(self, group_url, max_posts=6):
         """Quét các bài viết mới nhất trong Hội Nhóm Facebook (Group)"""
         if not self.page:

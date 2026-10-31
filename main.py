@@ -13,7 +13,8 @@ import webview
 from datetime import datetime
 from core.db import (
     init_db, get_setting, set_setting, get_all_settings,
-    get_recent_logs, log_comment, add_target_url, export_logs_to_csv
+    get_recent_logs, log_comment, add_target_url, export_logs_to_csv,
+    get_fanpages, save_fanpage, set_selected_fanpage, get_selected_fanpage
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
@@ -57,6 +58,34 @@ class DesktopAPI:
 
     def test_proxy(self, proxy_str):
         return BrowserEngine.test_proxy(proxy_str)
+
+    def get_fanpages_list(self):
+        pages = get_fanpages()
+        selected = get_selected_fanpage()
+        return {"pages": pages, "selected": selected}
+
+    def add_fanpage(self, name, url=""):
+        if name and name.strip():
+            save_fanpage(name.strip(), url.strip(), is_selected=1)
+            set_selected_fanpage(name.strip())
+            return {"success": True, "name": name.strip()}
+        return {"success": False, "message": "Tên Fanpage không được để trống"}
+
+    def select_fanpage(self, name):
+        set_selected_fanpage(name)
+        return True
+
+    def scan_fanpages_from_facebook(self):
+        self.live_status = "Đang quét danh sách Fanpage từ tài khoản..."
+        b = BrowserEngine(headless=False)
+        pages = b.scan_managed_fanpages()
+        b.close()
+        for p in pages:
+            save_fanpage(p["name"], p["url"])
+        if pages:
+            set_selected_fanpage(pages[0]["name"])
+        self.live_status = f"Đã quét xong {len(pages)} Fanpage."
+        return {"success": True, "count": len(pages), "pages": get_fanpages(), "selected": get_selected_fanpage()}
 
     def open_login_browser(self):
         """Mở cửa sổ Chrome thật để người dùng tự do đăng nhập và quản lý Fanpage an toàn"""

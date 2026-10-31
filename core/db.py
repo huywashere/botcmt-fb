@@ -115,6 +115,12 @@ def init_db():
     for k, v in default_settings.items():
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, v))
 
+    # Đảm bảo có ít nhất Fanpage Flex Phim mặc định
+    cursor.execute("SELECT COUNT(*) as cnt FROM fanpages")
+    if cursor.fetchone()["cnt"] == 0:
+        cursor.execute("INSERT INTO fanpages (page_name, page_url, is_selected) VALUES ('Flex Phim', 'https://www.facebook.com', 1)")
+        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('selected_fanpage', 'Flex Phim')")
+
     conn.commit()
     conn.close()
 
@@ -228,6 +234,35 @@ def get_fanpages():
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def save_fanpage(page_name, page_url="", is_selected=0):
+    """Lưu hoặc cập nhật Fanpage vào cơ sở dữ liệu"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM fanpages WHERE page_name = ?", (page_name.strip(),))
+    row = cursor.fetchone()
+    if row:
+        cursor.execute("UPDATE fanpages SET page_url = ?, is_selected = ? WHERE id = ?", (page_url.strip(), is_selected, row["id"]))
+    else:
+        cursor.execute("""
+            INSERT INTO fanpages (page_name, page_url, is_selected)
+            VALUES (?, ?, ?)
+        """, (page_name.strip(), page_url.strip(), is_selected))
+    conn.commit()
+    conn.close()
+
+def set_selected_fanpage(page_name):
+    """Đặt Fanpage được chọn làm đại diện bình luận"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE fanpages SET is_selected = 0")
+    cursor.execute("UPDATE fanpages SET is_selected = 1 WHERE page_name = ?", (page_name.strip(),))
+    conn.commit()
+    conn.close()
+    set_setting("selected_fanpage", page_name.strip())
+
+def get_selected_fanpage():
+    return get_setting("selected_fanpage", "Flex Phim")
 
 # Luôn đảm bảo database và các bảng mặc định tồn tại khi import
 init_db()
