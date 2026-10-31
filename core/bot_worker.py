@@ -5,7 +5,8 @@ from datetime import datetime
 from core.db import (
     get_setting, set_setting, log_comment, 
     is_post_already_commented, get_recent_logs,
-    get_pending_target_urls, mark_post_status
+    get_pending_target_urls, mark_post_status,
+    get_selected_fanpage
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
@@ -99,6 +100,12 @@ class BotWorker:
             if get_setting("warmup_enabled", "1") == "1":
                 self.notify_ui("status", "Đang thực hiện làm ấm session (Warm-Up lướt nhẹ 45s như người thật)...")
                 self.browser.run_warmup(duration_sec=45)
+
+            # Tự động chuyển đổi sang Fanpage đại diện (Auto-switch profile)
+            active_page = get_selected_fanpage() or (fanpages[0] if fanpages else "Flex Phim")
+            if active_page:
+                self.notify_ui("status", f"Đang tự động chuyển đổi danh tính sang Fanpage '{active_page}'...")
+                self.browser.switch_to_fanpage(active_page)
 
             while self.is_running:
                 # 1. Kiểm tra hẹn giờ phiên chạy (Session Duration)
