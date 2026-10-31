@@ -96,6 +96,14 @@ class BrowserEngine:
         except Exception:
             return url.split('?')[0] if url else ""
 
+    @staticmethod
+    def is_valid_post_url(url):
+        """Kiểm tra URL có thực sự là bài viết/video/ảnh hay không (tránh nhầm link trang cá nhân)"""
+        if not url or not url.startswith("https://www.facebook.com"):
+            return False
+        valid_signatures = ["/posts/", "/photo", "/videos/", "/watch", "/permalink/", "story_fbid", "fbid=", "/reel/"]
+        return any(sig in url for sig in valid_signatures)
+
     def __init__(self, headless=True, proxy=None):
         self.headless = headless
         # Tự động lấy proxy từ settings nếu không truyền vào
@@ -280,10 +288,10 @@ class BrowserEngine:
                         !h.includes('/latest/inbox') && !h.includes('/ad_center') && !h.includes('business.facebook.com')
                     );
 
-                    // Nếu chưa thấy, tìm link timestamp
+                    // Nếu chưa thấy, tìm link timestamp có cấu trúc bài viết thực thụ
                     if (!postUrl) {
                         const timeLink = card.querySelector('a[role="link"][tabindex="0"]');
-                        if (timeLink && timeLink.href && timeLink.href.startsWith('https://www.facebook.com') && !timeLink.href.includes('#')) {
+                        if (timeLink && timeLink.href && (timeLink.href.includes('/posts/') || timeLink.href.includes('/photo') || timeLink.href.includes('/permalink/') || timeLink.href.includes('/videos/') || timeLink.href.includes('fbid=') || timeLink.href.includes('/reel/'))) {
                             postUrl = timeLink.href;
                         }
                     }
@@ -319,7 +327,7 @@ class BrowserEngine:
                     break
                 raw_url = item.get("fullUrl") or item.get("url") or ""
                 p_url = BrowserEngine.clean_facebook_url(raw_url)
-                if not p_url:
+                if not p_url or not BrowserEngine.is_valid_post_url(p_url):
                     p_url = f"https://www.facebook.com/post_snippet_{abs(hash(item['content'][:60]))}"
 
                 if p_url in seen_urls:
@@ -352,8 +360,8 @@ class BrowserEngine:
             self.start()
 
         try:
-            # 1. Điều hướng đến bài viết nếu có link cụ thể
-            if post_url.startswith("http") and "post_snippet_" not in post_url:
+            # 1. Điều hướng đến bài viết nếu có link cụ thể và hợp lệ
+            if BrowserEngine.is_valid_post_url(post_url):
                 self.page.goto(post_url, timeout=45000)
                 time.sleep(random.uniform(3, 4.5))
 
@@ -381,14 +389,16 @@ class BrowserEngine:
             except Exception:
                 pass
 
-            # Tìm ô bình luận trên Facebook (hỗ trợ mọi giao diện Fanpage & Cá nhân)
+            # Tìm ô bình luận trên Facebook (chỉ tìm thẻ nhập text, tuyệt đối không nhầm sang comment cũ)
             comment_selectors = [
-                'div[aria-label*="Bình luận dưới tên"]',
-                'div[aria-label*="Viết bình luận"]',
-                'div[aria-label*="Write a comment"]',
-                'div[aria-label*="Comment as"]',
                 'div[role="textbox"][contenteditable="true"]',
-                'form [role="textbox"]'
+                'div[contenteditable="true"][aria-label*="Bình luận"]',
+                'div[contenteditable="true"][aria-label*="Viết"]',
+                'div[contenteditable="true"][aria-label*="Comment"]',
+                'div[role="textbox"][aria-label*="Bình luận"]',
+                'div[role="textbox"][aria-label*="Comment"]',
+                'form div[role="textbox"]',
+                'div[role="textbox"]'
             ]
 
             input_box = None
@@ -401,8 +411,14 @@ class BrowserEngine:
             if not input_box:
                 return False, "Không tìm thấy ô nhập bình luận trên bài viết này"
 
-            # Di chuột và click vào ô nhập để kích hoạt con trỏ
-            input_box.click()
+            # Di chuột và click vào ô nhập để kích hoạt con trỏ (force=True tránh bị lớp phủ cản)
+            try:
+                input_box.click(timeout=6000, force=True)
+            except Exception:
+                try:
+                    input_box.focus()
+                except Exception:
+                    pass
             time.sleep(random.uniform(1.0, 1.8))
 
             # Gõ nội dung bình luận mô phỏng người thật
