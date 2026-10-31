@@ -94,7 +94,17 @@ def init_db():
         "daily_limit": "25",         # Giới hạn an toàn chống ban tuyệt đối: tối đa 25 cmt/ngày
         "active_start": "08:00",     # Chỉ chạy từ 8h sáng
         "active_end": "23:00",       # Dừng lúc 23h đêm (tránh FB quét bot đêm)
-        "session_duration_minutes": "0"  # Hẹn giờ tắt: 0 = chạy theo khung giờ, 60 = chạy 1 tiếng tự tắt
+        "session_duration_minutes": "0",  # Hẹn giờ tắt: 0 = chạy theo khung giờ, 60 = chạy 1 tiếng tự tắt
+        # Cấu hình tính năng mới mở rộng:
+        "telegram_bot_token": "",
+        "telegram_chat_id": "",
+        "telegram_alerts_enabled": "0",
+        "blacklist_keywords": "tuyển dụng, tuyển nv, bán hàng, giá rẻ, vay tiền, vay nhanh, scam, lừa đảo, cờ bạc, bóng đá, chính trị, 18+",
+        "max_post_age_hours": "24",  # Chỉ cmt bài đăng trong vòng 24h
+        "comment_mode": "both",      # "post" (bình luận bài), "reply" (ưu tiên trả lời cmt người hỏi), "both"
+        "fanpage_rotation_list": "Vườn Phim",  # Danh sách tên các Fanpage cần xoay vòng (cách nhau bởi dấu phẩy)
+        "rotate_every_n_comments": "5",       # Số cmt trước khi đổi sang Page tiếp theo
+        "target_group_url": ""
     }
 
     for k, v in default_settings.items():

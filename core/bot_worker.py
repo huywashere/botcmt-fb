@@ -9,6 +9,7 @@ from core.db import (
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
+from core.telegram_notifier import TelegramNotifier
 
 class BotWorker:
     def __init__(self, ui_callback=None):
@@ -87,20 +88,33 @@ class BotWorker:
             session_start_time = time.time()
             consecutive_errors = 0
 
+            # Cấu hình danh sách Fanpage xoay vòng
+            fanpages_raw = get_setting("fanpage_rotation_list", "Vườn Phim").strip()
+            fanpages = [fp.strip() for fp in fanpages_raw.split(",") if fp.strip()]
+            current_page_idx = 0
+            current_page_comments_count = 0
+            rotate_threshold = int(get_setting("rotate_every_n_comments", "5"))
+
             while self.is_running:
                 # 1. Kiểm tra hẹn giờ phiên chạy (Session Duration)
                 duration_mins = int(get_setting("session_duration_minutes", "0"))
                 if duration_mins > 0:
                     elapsed_mins = (time.time() - session_start_time) / 60
                     if elapsed_mins >= duration_mins:
-                        self.notify_ui("status", f"Đã hết thời hạn phiên chạy ({duration_mins} phút). Đã tự dừng an toàn!")
+                        msg = f"Đã hết thời hạn phiên chạy ({duration_mins} phút). Đã tự dừng an toàn!"
+                        self.notify_ui("status", msg)
+                        if get_setting("telegram_alerts_enabled", "0") == "1":
+                            TelegramNotifier.send_message(f"⏹️ <b>[FB Bot]</b> {msg}")
                         break
 
                 # 2. Kiểm tra giới hạn bình luận tối đa trong ngày (Daily Quota Protection)
                 daily_limit = int(get_setting("daily_limit", "25"))
                 today_count = self.count_today_comments()
                 if today_count >= daily_limit:
-                    self.notify_ui("status", f"Đã đạt giới hạn an toàn {today_count}/{daily_limit} cmt hôm nay. Tự ngắt để bảo vệ Fanpage tuyệt đối!")
+                    msg = f"Đã đạt giới hạn an toàn {today_count}/{daily_limit} cmt hôm nay. Tự ngắt để bảo vệ Fanpage tuyệt đối!"
+                    self.notify_ui("status", msg)
+                    if get_setting("telegram_alerts_enabled", "0") == "1":
+                        TelegramNotifier.send_message(f"🏆 <b>[FB Bot Hoàn Thành]</b> {msg}")
                     break
 
                 # 3. Kiểm tra khung giờ cho phép (Active Hours)
@@ -143,6 +157,12 @@ class BotWorker:
                 keywords_raw = get_setting("keywords", "").strip()
                 keywords = [k.strip().lower() for k in keywords_raw.split(",") if k.strip()]
 
+                # Danh sách đen từ khóa loại trừ
+                blacklist_raw = get_setting("blacklist_keywords", "").strip()
+                blacklist = [b.strip().lower() for b in blacklist_raw.split(",") if b.strip()]
+
+                max_age_hours = int(get_setting("max_post_age_hours", "24"))
+
                 for p in posts:
                     if not self.is_running:
                         break
@@ -150,7 +170,20 @@ class BotWorker:
                     post_content = p["content"]
                     post_url = p["url"]
 
-                    # Kiểm tra từ khóa
+                    # 1. Kiểm tra từ khóa loại trừ (Blacklist)
+                    if blacklist and any(bad in post_content.lower() for bad in blacklist):
+                        self.notify_ui("status", f"Bỏ qua bài do chứa từ khóa loại trừ: {post_url[:35]}...")
+                        continue
+
+                    # 2. Kiểm tra tuổi bài viết (Chỉ cmt bài dưới 24h)
+                    if max_age_hours > 0:
+                        first_snippet = post_content[:150].lower()
+                        is_old = any(sig in first_snippet for sig in ["2 ngày", "3 ngày", "4 ngày", "5 ngày", "6 ngày", "1 tuần", "2 tuần", "1 tháng"])
+                        if is_old:
+                            self.notify_ui("status", f"Bỏ qua bài viết cũ quá 24h: {post_url[:35]}...")
+                            continue
+
+                    # 3. Kiểm tra từ khóa trọng tâm
                     if keywords:
                         has_kw = any(kw in post_content.lower() for kw in keywords)
                         if not has_kw:
@@ -159,30 +192,57 @@ class BotWorker:
                     if is_post_already_commented(post_url):
                         continue
 
+                    # Xác định Fanpage đại diện đang active
+                    current_fanpage_name = fanpages[current_page_idx] if fanpages else "Fanpage"
+
                     # Sinh bình luận thông minh bằng Gemini / Spintax
-                    self.notify_ui("status", "AI đang phân tích ngữ cảnh bài viết...")
-                    comment_text = AIEngine.generate_comment(post_content)
+                    self.notify_ui("status", f"AI đang phân tích ngữ cảnh bài viết cho '{current_fanpage_name}'...")
+                    comment_text = AIEngine.generate_comment(post_content, current_fanpage_name)
 
                     # Gửi thông tin về UI
                     self.notify_ui("current_processing", {
                         "url": post_url,
                         "snippet": post_content,
-                        "comment": comment_text
+                        "comment": comment_text,
+                        "page": current_fanpage_name
                     })
 
-                    # Thực hiện bình luận trên trình duyệt
-                    self.notify_ui("status", f"Đang mô phỏng người thật bình luận vào bài: {post_url[:35]}...")
-                    success, msg = self.browser.comment_on_post(post_url, comment_text)
+                    # Chọn chế độ: Bình luận bài viết hoặc Trả lời bình luận
+                    comment_mode = get_setting("comment_mode", "both")
+                    self.notify_ui("status", f"Đang mô phỏng người thật tương tác vào bài: {post_url[:35]}...")
+                    
+                    if comment_mode == "reply":
+                        success, msg = self.browser.reply_to_comment_on_post(post_url, comment_text)
+                    elif comment_mode == "both":
+                        if random.random() < 0.5:
+                            success, msg = self.browser.reply_to_comment_on_post(post_url, comment_text)
+                        else:
+                            success, msg = self.browser.comment_on_post(post_url, comment_text)
+                    else:
+                        success, msg = self.browser.comment_on_post(post_url, comment_text)
 
                     status_str = "Đã gửi" if success else "Lỗi"
-                    log_comment(post_url, post_content[:100], comment_text, "Fanpage", status_str, msg)
+                    log_comment(post_url, post_content[:100], comment_text, current_fanpage_name, status_str, msg)
                     mark_post_status(post_url, "sent" if success else "failed")
+
+                    # Gửi thông báo Telegram nếu được bật
+                    if success and get_setting("telegram_alerts_enabled", "0") == "1":
+                        TelegramNotifier.send_message(
+                            f"🔔 <b>[FB Auto Comment]</b>\n"
+                            f"🏷️ <b>Page</b>: {current_fanpage_name}\n"
+                            f"🎬 <b>Bài viết</b>: {post_content[:65]}...\n"
+                            f"💬 <b>Bình luận</b>: {comment_text}\n"
+                            f"📊 <b>Tiến độ hôm nay</b>: {self.count_today_comments()}/{daily_limit}"
+                        )
 
                     # Cơ chế ngắt khẩn cấp (Emergency Circuit Breaker)
                     if not success:
                         consecutive_errors += 1
                         if consecutive_errors >= 2:
-                            self.notify_ui("status", "⚠️ CẢNH BÁO AN TOÀN: Gặp 2 lỗi liên tiếp từ Facebook. Hệ thống tự động DỪNG KHẨN CẤP để bảo vệ Fanpage chống checkpoint!")
+                            warn_msg = "⚠️ CẢNH BÁO AN TOÀN: Gặp 2 lỗi liên tiếp từ Facebook. Hệ thống tự động DỪNG KHẨN CẤP để bảo vệ Fanpage chống checkpoint!"
+                            self.notify_ui("status", warn_msg)
+                            if get_setting("telegram_alerts_enabled", "0") == "1":
+                                TelegramNotifier.send_message(f"🚨 <b>[CẢNH BÁO DỪNG BOT]</b>\n{warn_msg}")
                             self.stop()
                             break
                     else:
@@ -195,9 +255,19 @@ class BotWorker:
                         "time": datetime.now().strftime("%H:%M:%S")
                     })
 
+                    # Kiểm tra xoay vòng Fanpage
+                    if fanpages and len(fanpages) > 1 and success:
+                        current_page_comments_count += 1
+                        if current_page_comments_count >= rotate_threshold:
+                            current_page_idx = (current_page_idx + 1) % len(fanpages)
+                            next_page = fanpages[current_page_idx]
+                            self.notify_ui("status", f"Đạt ngưỡng {rotate_threshold} cmt. Đang tự động đổi danh tính sang Fanpage: '{next_page}'...")
+                            self.browser.switch_to_fanpage(next_page)
+                            current_page_comments_count = 0
+
                     # Nghỉ ngẫu nhiên giữa 2 lần bình luận (Jitter)
-                    min_d = int(get_setting("min_delay", "120"))
-                    max_d = int(get_setting("max_delay", "300"))
+                    min_d = int(get_setting("min_delay", "150"))
+                    max_d = int(get_setting("max_delay", "360"))
                     delay_time = random.randint(min_d, max_d)
 
                     for sec in range(delay_time, 0, -1):

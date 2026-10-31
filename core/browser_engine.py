@@ -236,6 +236,45 @@ class BrowserEngine:
         except Exception as e:
             return False, f"Lỗi thao tác: {str(e)}"
 
+    def reply_to_comment_on_post(self, post_url, comment_text):
+        """Ưu tiên trả lời (Reply) trực tiếp vào bình luận của người hỏi để bắn thông báo chuông"""
+        if not self.page:
+            self.start()
+
+        try:
+            self.page.goto(post_url, timeout=45000)
+            time.sleep(random.uniform(3, 5))
+
+            # Cuộn xuống phần bình luận
+            self.page.evaluate(f"window.scrollBy(0, {random.randint(300, 550)})")
+            time.sleep(random.uniform(2, 3))
+
+            # Tìm nút "Phản hồi" hoặc "Reply" của bình luận đầu tiên
+            reply_buttons = self.page.locator('div[role="button"]:has-text("Phản hồi"), div[role="button"]:has-text("Reply")').all()
+            if reply_buttons and len(reply_buttons) > 0:
+                # Chọn nút phản hồi đầu tiên
+                target_btn = reply_buttons[0]
+                target_btn.click()
+                time.sleep(random.uniform(1.2, 2.0))
+
+                # Tìm ô nhập reply vừa mở
+                reply_input = self.page.locator('div[role="textbox"][contenteditable="true"]').last
+                if reply_input.count() > 0:
+                    reply_input.click()
+                    time.sleep(1)
+                    self.human_type(reply_input, comment_text)
+                    time.sleep(random.uniform(1.2, 2.0))
+                    self.page.keyboard.press("Enter")
+                    time.sleep(random.uniform(3, 4))
+                    return True, "Trả lời (Reply) bình luận thành công"
+
+            # Nếu bài chưa có cmt để reply, tự động fallback sang bình luận trực tiếp bài viết
+            return self.comment_on_post(post_url, comment_text)
+
+        except Exception as e:
+            # Fallback sang comment bình thường nếu gặp lỗi
+            return self.comment_on_post(post_url, comment_text)
+
     def extract_single_post_content(self, post_url):
         """Mở 1 link bài viết cụ thể và trích xuất nội dung bài viết"""
         if not self.page:

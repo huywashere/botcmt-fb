@@ -18,6 +18,7 @@ from core.db import (
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
 from core.bot_worker import BotWorker
+from core.telegram_notifier import TelegramNotifier
 
 class DesktopAPI:
     def __init__(self):
@@ -49,6 +50,10 @@ class DesktopAPI:
 
     def test_gemini(self, api_key):
         return AIEngine.test_gemini_connection(api_key)
+
+    def test_telegram(self, bot_token, chat_id):
+        success, msg = TelegramNotifier.test_connection(bot_token, chat_id)
+        return {"success": success, "message": msg}
 
     def open_login_browser(self):
         """Mở cửa sổ Chrome thật để người dùng tự do đăng nhập và quản lý Fanpage an toàn"""

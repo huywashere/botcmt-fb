@@ -57,6 +57,16 @@ async function loadConfig() {
       if (document.getElementById('inputActiveEnd')) document.getElementById('inputActiveEnd').value = settings.active_end || '23:00';
       if (document.getElementById('inputTargetGroup')) document.getElementById('inputTargetGroup').value = settings.target_group_url || '';
       if (document.getElementById('inputAutoLike')) document.getElementById('inputAutoLike').checked = (settings.auto_like_enabled !== '0');
+      
+      // Cấu hình mở rộng mới
+      if (document.getElementById('inputBlacklist')) document.getElementById('inputBlacklist').value = settings.blacklist_keywords || '';
+      if (document.getElementById('selectCommentMode')) document.getElementById('selectCommentMode').value = settings.comment_mode || 'both';
+      if (document.getElementById('selectMaxPostAge')) document.getElementById('selectMaxPostAge').value = settings.max_post_age_hours || '24';
+      if (document.getElementById('inputFanpageRotation')) document.getElementById('inputFanpageRotation').value = settings.fanpage_rotation_list || 'Vườn Phim';
+      if (document.getElementById('selectRotateThreshold')) document.getElementById('selectRotateThreshold').value = settings.rotate_every_n_comments || '5';
+      if (document.getElementById('inputTelegramToken')) document.getElementById('inputTelegramToken').value = settings.telegram_bot_token || '';
+      if (document.getElementById('inputTelegramChatId')) document.getElementById('inputTelegramChatId').value = settings.telegram_chat_id || '';
+      if (document.getElementById('inputTelegramAlerts')) document.getElementById('inputTelegramAlerts').checked = (settings.telegram_alerts_enabled === '1');
 
       // Update preview lines in newsfeed
       renderSpintaxPreview(settings.spintax_samples || '');
@@ -118,9 +128,37 @@ async function saveAllSettings() {
     active_end: document.getElementById('inputActiveEnd').value,
     target_group_url: document.getElementById('inputTargetGroup') ? document.getElementById('inputTargetGroup').value : '',
     auto_like_enabled: (document.getElementById('inputAutoLike') && document.getElementById('inputAutoLike').checked) ? '1' : '0',
+    telegram_bot_token: document.getElementById('inputTelegramToken') ? document.getElementById('inputTelegramToken').value : '',
+    telegram_chat_id: document.getElementById('inputTelegramChatId') ? document.getElementById('inputTelegramChatId').value : '',
+    telegram_alerts_enabled: (document.getElementById('inputTelegramAlerts') && document.getElementById('inputTelegramAlerts').checked) ? '1' : '0',
   };
   await window.pywebview.api.save_settings(payload);
-  showToast("Đã lưu cài đặt hệ thống!");
+  showToast("Đã lưu cài đặt hệ thống & Telegram!");
+}
+
+async function testTelegram() {
+  const token = document.getElementById('inputTelegramToken') ? document.getElementById('inputTelegramToken').value.trim() : '';
+  const chatId = document.getElementById('inputTelegramChatId') ? document.getElementById('inputTelegramChatId').value.trim() : '';
+  if (!token || !chatId) {
+    showToast("Vui lòng nhập đủ Telegram Bot Token và Chat ID!", true);
+    return;
+  }
+  showToast("Đang gửi tin nhắn test đến Telegram...");
+  const res = await window.pywebview.api.test_telegram(token, chatId);
+  if (res && res.success) {
+    showToast("Gửi tin nhắn Telegram thành công! Hãy kiểm tra điện thoại.");
+  } else {
+    showToast("Lỗi gửi Telegram: " + (res ? res.message : "Không phản hồi"), true);
+  }
+}
+
+async function saveRotationSettings() {
+  const payload = {
+    fanpage_rotation_list: document.getElementById('inputFanpageRotation').value,
+    rotate_every_n_comments: document.getElementById('selectRotateThreshold').value
+  };
+  await window.pywebview.api.save_settings(payload);
+  showToast("Đã lưu cấu hình xoay vòng Fanpage!");
 }
 
 async function saveAISettings() {
@@ -129,6 +167,9 @@ async function saveAISettings() {
     persona: document.getElementById('inputPersona').value,
     brand_mention: document.getElementById('inputBrand').value,
     keywords: document.getElementById('inputKeywords').value,
+    blacklist_keywords: document.getElementById('inputBlacklist') ? document.getElementById('inputBlacklist').value : '',
+    comment_mode: document.getElementById('selectCommentMode') ? document.getElementById('selectCommentMode').value : 'both',
+    max_post_age_hours: document.getElementById('selectMaxPostAge') ? document.getElementById('selectMaxPostAge').value : '24',
     spintax_samples: document.getElementById('inputSpintax').value
   };
   await window.pywebview.api.save_settings(payload);
