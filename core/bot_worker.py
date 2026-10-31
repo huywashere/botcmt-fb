@@ -4,7 +4,8 @@ import threading
 from datetime import datetime
 from core.db import (
     get_setting, set_setting, log_comment, 
-    is_post_already_commented, get_recent_logs
+    is_post_already_commented, get_recent_logs,
+    get_pending_target_urls, mark_post_status
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
@@ -86,8 +87,24 @@ class BotWorker:
                         time.sleep(1)
                     continue
 
-                self.notify_ui("status", "Đang quét bài viết mới trên Facebook...")
-                posts = self.browser.scan_newsfeed_posts(max_posts=6)
+                source_type = get_setting("feed_source", "for_you")
+                posts = []
+
+                if source_type == "custom_urls":
+                    self.notify_ui("status", "Đang lấy danh sách bài viết từ URL chỉ định...")
+                    pending_targets = get_pending_target_urls(limit=5)
+                    for item in pending_targets:
+                        target_url = item["post_url"]
+                        self.notify_ui("status", f"Đang trích xuất nội dung bài: {target_url[:35]}...")
+                        content = self.browser.extract_single_post_content(target_url)
+                        posts.append({
+                            "url": target_url,
+                            "content": content,
+                            "source": "Custom URL"
+                        })
+                else:
+                    self.notify_ui("status", "Đang quét bài viết mới trên Facebook...")
+                    posts = self.browser.scan_newsfeed_posts(max_posts=6)
 
                 # Lọc bài theo từ khóa nếu có cấu hình
                 keywords_raw = get_setting("keywords", "").strip()
@@ -126,6 +143,7 @@ class BotWorker:
 
                     status_str = "Đã gửi" if success else "Lỗi"
                     log_comment(post_url, post_content[:100], comment_text, "Fanpage", status_str, msg)
+                    mark_post_status(post_url, "sent" if success else "failed")
 
                     self.notify_ui("comment_completed", {
                         "post_snippet": post_content[:80],
@@ -168,3 +186,4 @@ class BotWorker:
         self.notify_ui("status", "Đang gửi lệnh dừng...")
         if self.browser:
             self.browser.close()
+

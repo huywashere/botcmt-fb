@@ -325,3 +325,4 @@ window.addEventListener('pywebviewready', () => {
   // Poll state every 1.5 seconds
   setInterval(pollBackendState, 1500);
 });
+

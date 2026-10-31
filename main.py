@@ -13,7 +13,7 @@ import webview
 from datetime import datetime
 from core.db import (
     init_db, get_setting, set_setting, get_all_settings,
-    get_recent_logs, log_comment
+    get_recent_logs, log_comment, add_target_url
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
@@ -65,10 +65,16 @@ class DesktopAPI:
         return {"is_logged_in": is_logged}
 
     def scan_test(self):
+        if self.login_browser:
+            self.login_browser.close()
+            self.login_browser = None
         self.worker.scan_only()
         return True
 
     def start_auto(self):
+        if self.login_browser:
+            self.login_browser.close()
+            self.login_browser = None
         self.worker.start_auto()
         return True
 
@@ -108,8 +114,10 @@ class DesktopAPI:
         return {"success": success, "message": msg}
 
     def add_target_url(self, url):
-        # Có thể lưu thêm vào DB nếu cần
-        return True
+        if url and url.strip():
+            add_target_url(url.strip())
+            return True
+        return False
 
 def main():
     # 1. Khởi tạo cơ sở dữ liệu SQLite

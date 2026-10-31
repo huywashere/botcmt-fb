@@ -68,3 +68,4 @@ c:\bot-cmt fb\
   - Chọn tần suất quét (ví dụ: `5 phút`).
   - Bấm **"Quét thử - chưa gửi"** để xem trước AI sinh bình luận thế nào.
   - Bấm **"Bật tự bình luận"** để hệ thống tự động làm việc theo lịch trình.
+

@@ -10,6 +10,8 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 os.makedirs(DATA_DIR, exist_ok=True)
 
 class BrowserEngine:
+    _active_instance = None
+
     def __init__(self, headless=False, proxy=None):
         self.headless = headless
         self.proxy = proxy
@@ -19,6 +21,13 @@ class BrowserEngine:
 
     def start(self):
         """Khởi động trình duyệt với user-data-dir để lưu trữ session vĩnh viễn"""
+        # Nếu có instance trước đó đang giữ lock, đóng trước
+        if BrowserEngine._active_instance and BrowserEngine._active_instance != self:
+            try:
+                BrowserEngine._active_instance.close()
+            except Exception:
+                pass
+
         if self.playwright is None:
             self.playwright = sync_playwright().start()
 
@@ -46,6 +55,8 @@ class BrowserEngine:
             args=args
         )
 
+        BrowserEngine._active_instance = self
+
         if len(self.context.pages) > 0:
             self.page = self.context.pages[0]
         else:
@@ -68,6 +79,8 @@ class BrowserEngine:
         except Exception:
             pass
         finally:
+            if BrowserEngine._active_instance == self:
+                BrowserEngine._active_instance = None
             self.context = None
             self.playwright = None
             self.page = None
@@ -211,3 +224,63 @@ class BrowserEngine:
 
         except Exception as e:
             return False, f"Lỗi thao tác: {str(e)}"
+
+    def extract_single_post_content(self, post_url):
+        """Mở 1 link bài viết cụ thể và trích xuất nội dung bài viết"""
+        if not self.page:
+            self.start()
+
+        try:
+            self.page.goto(post_url, timeout=45000)
+            time.sleep(random.uniform(3, 5))
+
+            # Tìm nội dung bài viết
+            selectors = [
+                'div[data-ad-preview="message"]',
+                'div[dir="auto"]',
+                'div[role="article"]'
+            ]
+            for sel in selectors:
+                loc = self.page.locator(sel).first
+                if loc.count() > 0:
+                    text = loc.inner_text().strip()
+                    if len(text) > 15:
+                        return text[:500]
+
+            # Fallback lấy text trên body
+            body_text = self.page.locator('body').inner_text()
+            return body_text[:300]
+        except Exception as e:
+            return f"Không thể lấy nội dung bài viết: {str(e)}"
+
+    def switch_to_fanpage(self, page_name=""):
+        """Hỗ trợ chuyển đổi sang Profile Fanpage (New Page Experience)"""
+        if not self.page:
+            self.start()
+
+        try:
+            self.page.goto("https://www.facebook.com", timeout=30000)
+            time.sleep(3)
+
+            # Click vào Avatar menu góc trên bên phải
+            avatar_btn = self.page.locator('div[aria-label*="Tài khoản của bạn"], div[aria-label*="Your profile"], svg[aria-label*="Tài khoản của bạn"]').first
+            if avatar_btn.count() > 0:
+                avatar_btn.click()
+                time.sleep(2)
+
+                # Tìm nút "Xem tất cả trang cá nhân" hoặc click vào Page nếu có tên
+                see_all = self.page.locator('div[role="button"]:has-text("Xem tất cả trang cá nhân"), div[role="button"]:has-text("See all profiles")').first
+                if see_all.count() > 0:
+                    see_all.click()
+                    time.sleep(2)
+
+                if page_name:
+                    target_page = self.page.locator(f'div[role="button"]:has-text("{page_name}")').first
+                    if target_page.count() > 0:
+                        target_page.click()
+                        time.sleep(4)
+                        return True, f"Đã chuyển sang Fanpage: {page_name}"
+            return True, "Giữ nguyên profile hiện tại"
+        except Exception as e:
+            return False, f"Không thể tự động switch page: {str(e)}"
+

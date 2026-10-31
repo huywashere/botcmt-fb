@@ -158,6 +158,35 @@ def get_accounts():
     conn.close()
     return [dict(r) for r in rows]
 
+def add_target_url(url, source_name="Chỉ định"):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR IGNORE INTO posts (post_url, content, source_type, source_name, status)
+        VALUES (?, '', 'custom_urls', ?, 'pending')
+    """, (url.strip(), source_name))
+    conn.commit()
+    conn.close()
+
+def get_pending_target_urls(limit=20):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM posts 
+        WHERE source_type = 'custom_urls' AND status = 'pending'
+        ORDER BY id ASC LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def mark_post_status(post_url, status):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE posts SET status = ? WHERE post_url = ?", (status, post_url))
+    conn.commit()
+    conn.close()
+
 def get_fanpages():
     conn = get_db()
     cursor = conn.cursor()
