@@ -207,10 +207,10 @@ class BrowserEngine:
             self.page.goto("https://www.facebook.com", timeout=45000)
             time.sleep(4)
 
-            # Cuộn trang nhẹ nhàng 2-3 lần để load thêm bài viết
-            for _ in range(3):
-                self.page.evaluate("window.scrollBy(0, 600)")
-                time.sleep(random.uniform(1.5, 2.5))
+            # Cuộn trang nhẹ nhàng để tải nhiều bài viết phong phú
+            for _ in range(6):
+                self.page.evaluate("window.scrollBy(0, 700)")
+                time.sleep(random.uniform(1.5, 2.2))
 
             articles = self.page.locator('div[role="feed"] > div').all()
             for article in articles:
@@ -468,14 +468,10 @@ class BrowserEngine:
                     break
 
             if avatar_clicked:
-                # Tìm nút "Xem tất cả trang cá nhân" hoặc "See all profiles"
-                see_all = self.page.locator('div[role="button"]:has-text("Xem tất cả"), div[role="button"]:has-text("See all"), div[aria-label*="Xem tất cả"]').first
-                if see_all.count() > 0 and see_all.is_visible():
-                    see_all.click()
-                    time.sleep(2)
-
-                # Tìm và click vào Fanpage mục tiêu theo tên
+                # 1. Thử click trực tiếp vào Fanpage nếu đã hiển thị ngay trên menu chính
                 target_selectors = [
+                    f'div[role="dialog"] [role="button"]:has-text("{page_name}")',
+                    f'div[role="menu"] [role="button"]:has-text("{page_name}")',
                     f'div[role="button"]:has-text("{page_name}")',
                     f'div[role="listitem"]:has-text("{page_name}")',
                     f'span:has-text("{page_name}")'
@@ -486,6 +482,18 @@ class BrowserEngine:
                         target_page.click()
                         time.sleep(5)
                         return True, f"Đã tự động chuyển sang Fanpage: {page_name}"
+
+                # 2. Nếu chưa thấy trên menu chính, mới bấm "Xem tất cả trang cá nhân"
+                see_all = self.page.locator('div[role="button"]:has-text("Xem tất cả"), div[role="button"]:has-text("See all"), div[aria-label*="Xem tất cả"]').first
+                if see_all.count() > 0 and see_all.is_visible():
+                    see_all.click()
+                    time.sleep(2)
+                    for tsel in target_selectors:
+                        target_page = self.page.locator(tsel).first
+                        if target_page.count() > 0 and target_page.is_visible():
+                            target_page.click()
+                            time.sleep(5)
+                            return True, f"Đã tự động chuyển sang Fanpage: {page_name}"
 
             return True, "Giữ nguyên profile hiện tại"
         except Exception as e:

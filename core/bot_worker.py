@@ -175,6 +175,7 @@ class BotWorker:
                 blacklist = [b.strip().lower() for b in blacklist_raw.split(",") if b.strip()]
 
                 max_age_hours = int(get_setting("max_post_age_hours", "24"))
+                commented_this_round = 0
 
                 for p in posts:
                     if not self.is_running:
@@ -200,6 +201,7 @@ class BotWorker:
                     if keywords:
                         has_kw = any(kw in post_content.lower() for kw in keywords)
                         if not has_kw:
+                            self.notify_ui("status", f"Bỏ qua bài không chứa từ khóa phim: '{post_content[:35]}...'")
                             continue
 
                     if is_post_already_commented(post_url):
@@ -235,6 +237,8 @@ class BotWorker:
                         success, msg = self.browser.comment_on_post(post_url, comment_text)
 
                     status_str = "Đã gửi" if success else "Lỗi"
+                    if success:
+                        commented_this_round += 1
                     log_comment(post_url, post_content[:100], comment_text, current_fanpage_name, status_str, msg)
                     mark_post_status(post_url, "sent" if success else "failed")
 
@@ -291,7 +295,10 @@ class BotWorker:
 
                 # Sau khi hết lượt bài, chờ theo scan_interval
                 scan_minutes = int(get_setting("scan_interval", "5"))
-                self.notify_ui("status", f"Đã quét xong lượt này. Lần quét tiếp theo sau {scan_minutes} phút...")
+                if commented_this_round == 0:
+                    self.notify_ui("status", f"Lượt quét vừa rồi không có bài viết chứa từ khóa phim ('{keywords_raw[:20]}...'). Lần quét tiếp sau {scan_minutes} phút...")
+                else:
+                    self.notify_ui("status", f"Đã quét và bình luận xong lượt này. Lần quét tiếp theo sau {scan_minutes} phút...")
                 for sec in range(scan_minutes * 60, 0, -1):
                     if not self.is_running:
                         break
