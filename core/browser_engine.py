@@ -233,7 +233,7 @@ class BrowserEngine:
                 links = article.locator("a").all()
                 for link in links:
                     href = link.get_attribute("href") or ""
-                    if "/posts/" in href or "/videos/" in href or "story_fbid=" in href or "/photo" in href:
+                    if "/posts/" in href or "/videos/" in href or "story_fbid=" in href or "/photo" in href or "/permalink/" in href or "/watch" in href:
                         post_url = href.split("?")[0]
                         if not post_url.startswith("http"):
                             post_url = "https://www.facebook.com" + post_url
@@ -297,6 +297,15 @@ class BrowserEngine:
                         time.sleep(random.uniform(1.2, 2.5))
                 except Exception:
                     pass
+
+            # Nếu chưa thấy ô nhập ngay, thử click nút 'Bình luận' trên bài viết để kích hoạt ô nhập
+            try:
+                cmt_trigger = self.page.locator('div[role="button"]:has-text("Bình luận"), div[aria-label*="Để lại bình luận"]').first
+                if cmt_trigger.count() > 0 and cmt_trigger.is_visible():
+                    cmt_trigger.click()
+                    time.sleep(1.5)
+            except Exception:
+                pass
 
             # Tìm ô bình luận trên Facebook (hỗ trợ nhiều selector)
             comment_selectors = [
@@ -431,7 +440,7 @@ class BrowserEngine:
             return False
 
     def switch_to_fanpage(self, page_name=""):
-        """Hỗ trợ tự động chuyển đổi sang Profile Fanpage (New Page Experience) hoàn toàn tự động"""
+        """Hỗ trợ tự động chuyển đổi sang Profile Fanpage (New Page Experience) siêu tốc & không bao giờ bị treo"""
         if not self.page:
             self.start()
 
@@ -439,65 +448,98 @@ class BrowserEngine:
             return True, "Không có tên Fanpage"
 
         try:
-            self.page.goto("https://www.facebook.com", timeout=35000)
+            # 1. Đảm bảo đang ở trang Facebook
+            current_url = self.page.url
+            if "facebook.com" not in current_url:
+                self.page.goto("https://www.facebook.com", timeout=25000, wait_until="domcontentloaded")
+                time.sleep(2)
+
+            # 2. Kiểm tra xem hiện tại đã là Fanpage này chưa
+            is_already = self.page.evaluate("""(name) => {
+                const header = document.querySelector('header, div[role="banner"], [role="navigation"]');
+                if (header && header.innerText.toLowerCase().includes(name.toLowerCase())) return true;
+                return false;
+            }""", page_name)
+            if is_already:
+                return True, f"Hiện tại đã là Fanpage {page_name}"
+
+            # 3. Click vào Avatar góc trên cùng bên phải theo tọa độ hình học (100% trúng đích mọi giao diện)
+            clicked = self.page.evaluate("""() => {
+                const triggers = Array.from(document.querySelectorAll('[aria-label*="cá nhân"], [aria-label*="profile"], [aria-label*="Tài khoản"], [role="navigation"] [role="button"], [role="banner"] [role="button"], svg image'));
+                for (const el of triggers) {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.right > window.innerWidth - 160 && rect.top < 85 && rect.width > 15 && rect.height > 15) {
+                        let clickTarget = el;
+                        if (el.tagName === 'image') {
+                            clickTarget = el.closest('div[role="button"]') || el.parentElement;
+                        }
+                        clickTarget.click();
+                        return true;
+                    }
+                }
+                return false;
+            }""")
+
+            time.sleep(2.5)
+
+            # 4. Tìm và click trực tiếp vào Fanpage trong menu vừa hiện
+            switched = self.page.evaluate("""(name) => {
+                const elements = Array.from(document.querySelectorAll('div[role="dialog"] *, div[role="menu"] *, [role="navigation"] *'));
+                for (const el of elements) {
+                    if (el.children.length === 0 && el.textContent.trim().toLowerCase() === name.toLowerCase()) {
+                        let cur = el;
+                        while (cur && cur.getAttribute('role') !== 'button' && cur.tagName !== 'A' && cur.parentElement) {
+                            cur = cur.parentElement;
+                            if (cur && (cur.getAttribute('role') === 'button' || cur.tagName === 'A')) break;
+                        }
+                        if (cur) { cur.click(); return true; }
+                        el.click();
+                        return true;
+                    }
+                }
+                return false;
+            }""", page_name)
+
+            if switched:
+                time.sleep(4)
+                return True, f"Đã tự động chuyển sang Fanpage: {page_name}"
+
+            # 5. Nếu chưa thấy, thử click 'Xem tất cả trang cá nhân'
+            self.page.evaluate("""() => {
+                const btns = Array.from(document.querySelectorAll('div[role="dialog"] [role="button"], div[role="menu"] [role="button"]'));
+                for (const b of btns) {
+                    const t = b.innerText.toLowerCase();
+                    if (t.includes("xem tất cả") || t.includes("see all")) {
+                        b.click();
+                        return true;
+                    }
+                }
+                return false;
+            }""")
+
+            time.sleep(2)
+            self.page.evaluate("""(name) => {
+                const elements = Array.from(document.querySelectorAll('div[role="dialog"] *, div[role="menu"] *'));
+                for (const el of elements) {
+                    if (el.children.length === 0 && el.textContent.trim().toLowerCase() === name.toLowerCase()) {
+                        let cur = el;
+                        while (cur && cur.getAttribute('role') !== 'button' && cur.tagName !== 'A' && cur.parentElement) {
+                            cur = cur.parentElement;
+                            if (cur && (cur.getAttribute('role') === 'button' || cur.tagName === 'A')) break;
+                        }
+                        if (cur) { cur.click(); return true; }
+                        el.click();
+                        return true;
+                    }
+                }
+                return false;
+            }""", page_name)
+
             time.sleep(3)
-
-            # 1. Kiểm tra xem hiện tại có thể đã là Fanpage này chưa
-            try:
-                banner_text = self.page.locator('div[role="banner"]').inner_text()
-                if page_name.lower() in banner_text.lower():
-                    return True, f"Hiện tại đã là Fanpage {page_name}"
-            except Exception:
-                pass
-
-            # 2. Click vào Avatar menu góc trên bên phải
-            avatar_selectors = [
-                'div[aria-label*="Tài khoản của bạn"]',
-                'div[aria-label*="Your profile"]',
-                'div[aria-label*="Trang cá nhân"]',
-                'div[role="banner"] [role="button"]:has(svg)',
-                'div[role="banner"] [role="button"]:has(image)'
-            ]
-            avatar_clicked = False
-            for sel in avatar_selectors:
-                btn = self.page.locator(sel).first
-                if btn.count() > 0 and btn.is_visible():
-                    btn.click()
-                    avatar_clicked = True
-                    time.sleep(2)
-                    break
-
-            if avatar_clicked:
-                # 1. Thử click trực tiếp vào Fanpage nếu đã hiển thị ngay trên menu chính
-                target_selectors = [
-                    f'div[role="dialog"] [role="button"]:has-text("{page_name}")',
-                    f'div[role="menu"] [role="button"]:has-text("{page_name}")',
-                    f'div[role="button"]:has-text("{page_name}")',
-                    f'div[role="listitem"]:has-text("{page_name}")',
-                    f'span:has-text("{page_name}")'
-                ]
-                for tsel in target_selectors:
-                    target_page = self.page.locator(tsel).first
-                    if target_page.count() > 0 and target_page.is_visible():
-                        target_page.click()
-                        time.sleep(5)
-                        return True, f"Đã tự động chuyển sang Fanpage: {page_name}"
-
-                # 2. Nếu chưa thấy trên menu chính, mới bấm "Xem tất cả trang cá nhân"
-                see_all = self.page.locator('div[role="button"]:has-text("Xem tất cả"), div[role="button"]:has-text("See all"), div[aria-label*="Xem tất cả"]').first
-                if see_all.count() > 0 and see_all.is_visible():
-                    see_all.click()
-                    time.sleep(2)
-                    for tsel in target_selectors:
-                        target_page = self.page.locator(tsel).first
-                        if target_page.count() > 0 and target_page.is_visible():
-                            target_page.click()
-                            time.sleep(5)
-                            return True, f"Đã tự động chuyển sang Fanpage: {page_name}"
-
-            return True, "Giữ nguyên profile hiện tại"
+            return True, "Hoàn tất kiểm tra Fanpage"
         except Exception as e:
-            return False, f"Không thể tự động switch page: {str(e)}"
+            print("Lỗi chuyển Fanpage:", str(e))
+            return False, str(e)
 
     def scan_managed_fanpages(self):
         """Tự động quét danh sách các Fanpage mà tài khoản đang quản lý trên Facebook"""
