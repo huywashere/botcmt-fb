@@ -508,6 +508,8 @@ class BrowserEngine:
                 href = l.get_attribute("href") or ""
                 text = l.inner_text().strip()
                 if "/" in href and len(text) > 1 and text not in ["Trang chủ", "Home", "Video", "Nhóm", "Groups"]:
+                    if any(skip in href.lower() for skip in ["inbox", "ad_center", "business", "settings", "notifications"]):
+                        continue
                     lines = [line.strip() for line in text.split("\n") if line.strip()]
                     if lines and lines[0] not in found_names and len(lines[0]) < 60:
                         page_name = lines[0]
