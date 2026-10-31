@@ -1,10 +1,15 @@
 import os
 import sys
 
-# Đảm bảo hiển thị tiếng Việt mượt mà trên console Windows
-if hasattr(sys.stdout, 'reconfigure'):
+# Khắc phục lỗi khi chạy ngầm qua pythonw.exe (tránh lỗi sys.stdout và sys.stderr là None)
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8')
+elif hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
-if hasattr(sys.stderr, 'reconfigure'):
+
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w', encoding='utf-8')
+elif hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
 import json
