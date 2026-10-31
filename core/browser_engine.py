@@ -77,6 +77,25 @@ class BrowserEngine:
         except Exception as e:
             return {"success": False, "message": f"Lỗi kết nối Proxy: {str(e)}"}
 
+    @staticmethod
+    def clean_facebook_url(url):
+        """Làm sạch URL bài viết Facebook, giữ nguyên định danh bài viết và loại bỏ tham số theo dõi"""
+        if not url:
+            return ""
+        try:
+            from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+            parsed = urlparse(url)
+            if "/photo" in url or "story_fbid" in url or "permalink" in url:
+                qs = parse_qs(parsed.query)
+                keep_keys = {"fbid", "set", "story_fbid", "id"}
+                filtered_qs = {k: v for k, v in qs.items() if k in keep_keys}
+                clean_query = urlencode(filtered_qs, doseq=True)
+                return urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, clean_query, ''))
+            else:
+                return url.split('?')[0]
+        except Exception:
+            return url.split('?')[0] if url else ""
+
     def __init__(self, headless=False, proxy=None):
         self.headless = headless
         # Tự động lấy proxy từ settings nếu không truyền vào
@@ -198,67 +217,107 @@ class BrowserEngine:
             return False
 
     def scan_newsfeed_posts(self, max_posts=10):
-        """Quét các bài viết trên Newsfeed Facebook"""
+        """Quét các bài viết trên Newsfeed Facebook (tương thích đa giao diện Fanpage lẫn Nick cá nhân)"""
         if not self.page:
             self.start()
 
         posts = []
         try:
-            self.page.goto("https://www.facebook.com", timeout=45000)
-            time.sleep(4)
+            cur_url = self.page.url
+            if not cur_url.startswith("https://www.facebook.com") or "login" in cur_url:
+                self.page.goto("https://www.facebook.com", timeout=45000)
+                time.sleep(4)
 
             # Cuộn trang nhẹ nhàng để tải nhiều bài viết phong phú
-            for _ in range(6):
-                self.page.evaluate("window.scrollBy(0, 700)")
-                time.sleep(random.uniform(1.5, 2.2))
+            for _ in range(4):
+                self.page.evaluate("window.scrollBy(0, 800)")
+                time.sleep(random.uniform(1.2, 1.8))
 
-            articles = self.page.locator('div[role="feed"] > div').all()
-            for article in articles:
+            # Trích xuất bài viết qua DOM traversal tối ưu, quét từ các điểm neo hành động
+            extracted = self.page.evaluate("""() => {
+                const results = [];
+                // Quét qua nút Bình luận và nút Hành động trên feed
+                const cmtButtons = Array.from(document.querySelectorAll('[aria-label*="Bình luận"], [aria-label*="Comment"]'));
+                const actionButtons = Array.from(document.querySelectorAll('[aria-label*="Hành động đối với bài viết"], [aria-label*="Actions for this post"]'));
+                
+                const anchors = [...cmtButtons, ...actionButtons];
+                const seenCards = new Set();
+
+                for (const anchor of anchors) {
+                    let card = anchor;
+                    for (let i = 0; i < 14; i++) {
+                        if (card && card.parentElement && card.parentElement.tagName !== 'BODY') {
+                            const txt = card.innerText || '';
+                            if (txt.length > 50 && (txt.includes('Thích') || txt.includes('Like') || txt.includes('Chia sẻ') || txt.includes('Share'))) {
+                                break;
+                            }
+                            card = card.parentElement;
+                        }
+                    }
+
+                    if (!card || seenCards.has(card)) continue;
+                    seenCards.add(card);
+
+                    // Tìm link bài viết (permalink, posts, photo, videos, watch, story)
+                    const links = Array.from(card.querySelectorAll('a')).map(a => a.href).filter(Boolean);
+                    let postUrl = links.find(h => 
+                        (h.includes('/posts/') || h.includes('/videos/') || h.includes('story_fbid') || 
+                         h.includes('/permalink/') || h.includes('/photo') || (h.includes('/watch') && !h.includes('/hashtag/'))) &&
+                        !h.includes('/stories/') && !h.includes('/story.php') && !h.includes('/hashtag/') &&
+                        !h.includes('/latest/inbox') && !h.includes('/ad_center') && !h.includes('business.facebook.com')
+                    );
+
+                    // Nếu chưa thấy, tìm link timestamp
+                    if (!postUrl) {
+                        const timeLink = card.querySelector('a[role="link"][tabindex="0"]');
+                        if (timeLink && timeLink.href && timeLink.href.startsWith('https://www.facebook.com') && !timeLink.href.includes('#')) {
+                            postUrl = timeLink.href;
+                        }
+                    }
+
+                    // Tách nội dung văn bản bài viết
+                    const lines = (card.innerText || '').split('\\n')
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0 && 
+                            !['Facebook', 'Thích', 'Bình luận', 'Chia sẻ', 'Like', 'Comment', 'Share', 'Gửi', 'Xem thêm', '...'].includes(l) &&
+                            !l.startsWith('Đã bày tỏ cảm xúc') && !l.startsWith('Bình luận về bài viết') && !l.startsWith('Comment on')
+                        );
+
+                    const cleanText = lines.slice(0, 10).join(' ');
+                    if (cleanText.length < 15) continue;
+
+                    // Tìm ảnh đính kèm bài viết nếu có (cho Gemini Multimodal Vision)
+                    const img = card.querySelector('img[src*="scontent"], img[src*="fbcdn"]');
+                    const imgUrl = img ? img.src : '';
+
+                    results.push({
+                        url: postUrl ? postUrl.split('?')[0] : '',
+                        fullUrl: postUrl || '',
+                        content: cleanText.slice(0, 400),
+                        image_url: imgUrl
+                    });
+                }
+                return results;
+            }""")
+
+            seen_urls = set()
+            for item in extracted:
                 if len(posts) >= max_posts:
                     break
+                raw_url = item.get("fullUrl") or item.get("url") or ""
+                p_url = BrowserEngine.clean_facebook_url(raw_url)
+                if not p_url:
+                    p_url = f"https://www.facebook.com/post_snippet_{abs(hash(item['content'][:60]))}"
 
-                # Trích xuất nội dung bài viết
-                text = article.inner_text().strip()
-                if len(text) < 25:
+                if p_url in seen_urls:
                     continue
+                seen_urls.add(p_url)
 
-                # Lọc bỏ các bài viết quảng cáo hoặc bài gợi ý nếu muốn
-                lines = [line.strip() for line in text.split("\n") if line.strip()]
-                # Bỏ các nút Thích, Bình luận, Chia sẻ ở cuối
-                filtered_lines = [l for l in lines if l not in ["Thích", "Bình luận", "Chia sẻ", "Gửi", "Like", "Comment", "Share"]]
-                clean_text = " ".join(filtered_lines[:10])
-
-                # Tìm link bài viết
-                post_url = ""
-                links = article.locator("a").all()
-                for link in links:
-                    href = link.get_attribute("href") or ""
-                    if "/posts/" in href or "/videos/" in href or "story_fbid=" in href or "/photo" in href or "/permalink/" in href or "/watch" in href:
-                        post_url = href.split("?")[0]
-                        if not post_url.startswith("http"):
-                            post_url = "https://www.facebook.com" + post_url
-                        break
-
-                if not post_url:
-                    # Nếu không tìm thấy link riêng, tạo id giả lập theo snippet
-                    post_url = f"https://www.facebook.com/post_snippet_{abs(hash(clean_text[:60]))}"
-
-                # Tìm ảnh đính kèm bài viết nếu có (cho Gemini Multimodal Vision)
-                img_url = ""
-                try:
-                    for img in article.locator("img").all():
-                        src = img.get_attribute("src") or ""
-                        if "scontent" in src or "fbcdn" in src:
-                            img_url = src
-                            break
-                except Exception:
-                    pass
-
-                if not is_post_already_commented(post_url):
+                if not is_post_already_commented(p_url):
                     posts.append({
-                        "url": post_url,
-                        "content": clean_text[:400],
-                        "image_url": img_url,
+                        "url": p_url,
+                        "content": item["content"],
+                        "image_url": item.get("image_url", ""),
                         "source": "Newsfeed"
                     })
         except Exception as e:
@@ -267,12 +326,12 @@ class BrowserEngine:
         return posts
 
     def human_type(self, locator, text):
-        """Gõ chữ mô phỏng hành vi người thật với độ trễ biến thiên"""
+        """Gõ chữ mô phỏng hành vi người thật với độ trễ biến thiên an toàn"""
         for char in text:
-            locator.type(char, delay=random.randint(45, 120))
+            self.page.keyboard.type(char, delay=random.randint(25, 60))
             if random.random() < 0.05:
-                # Thỉnh thoảng khựng lại 0.2 - 0.4s như người đang suy nghĩ
-                time.sleep(random.uniform(0.2, 0.4))
+                # Thỉnh thoảng khựng lại 0.15 - 0.3s như người đang suy nghĩ
+                time.sleep(random.uniform(0.15, 0.3))
 
     def comment_on_post(self, post_url, comment_text, fanpage_name=""):
         """Thực hiện bình luận vào bài viết chỉ định"""
@@ -280,12 +339,14 @@ class BrowserEngine:
             self.start()
 
         try:
-            self.page.goto(post_url, timeout=45000)
-            time.sleep(random.uniform(3, 5))
+            # 1. Điều hướng đến bài viết nếu có link cụ thể
+            if post_url.startswith("http") and "post_snippet_" not in post_url:
+                self.page.goto(post_url, timeout=45000)
+                time.sleep(random.uniform(3, 4.5))
 
             # Cuộn nhẹ trang như người đang đọc
             self.page.evaluate(f"window.scrollBy(0, {random.randint(200, 450)})")
-            time.sleep(random.uniform(2, 4))
+            time.sleep(random.uniform(1.5, 2.5))
 
             # Thả Like nhẹ như người dùng thật (Warm-up Like chống bot detection)
             auto_like = get_setting("auto_like_enabled", "1") == "1"
@@ -294,24 +355,25 @@ class BrowserEngine:
                     like_btn = self.page.locator('div[aria-label="Thích"], div[aria-label="Like"], div[role="button"]:has-text("Thích")').first
                     if like_btn.count() > 0 and like_btn.is_visible():
                         like_btn.click()
-                        time.sleep(random.uniform(1.2, 2.5))
+                        time.sleep(random.uniform(1.2, 2.0))
                 except Exception:
                     pass
 
             # Nếu chưa thấy ô nhập ngay, thử click nút 'Bình luận' trên bài viết để kích hoạt ô nhập
             try:
-                cmt_trigger = self.page.locator('div[role="button"]:has-text("Bình luận"), div[aria-label*="Để lại bình luận"]').first
+                cmt_trigger = self.page.locator('div[role="button"]:has-text("Bình luận"), div[aria-label*="Để lại bình luận"], div[aria-label*="Bình luận về bài viết"], div[aria-label*="Comment on"]').first
                 if cmt_trigger.count() > 0 and cmt_trigger.is_visible():
                     cmt_trigger.click()
                     time.sleep(1.5)
             except Exception:
                 pass
 
-            # Tìm ô bình luận trên Facebook (hỗ trợ nhiều selector)
+            # Tìm ô bình luận trên Facebook (hỗ trợ mọi giao diện Fanpage & Cá nhân)
             comment_selectors = [
+                'div[aria-label*="Bình luận dưới tên"]',
                 'div[aria-label*="Viết bình luận"]',
                 'div[aria-label*="Write a comment"]',
-                'div[aria-label*="Bình luận dưới tên"]',
+                'div[aria-label*="Comment as"]',
                 'div[role="textbox"][contenteditable="true"]',
                 'form [role="textbox"]'
             ]
@@ -326,17 +388,26 @@ class BrowserEngine:
             if not input_box:
                 return False, "Không tìm thấy ô nhập bình luận trên bài viết này"
 
-            # Di chuột và click vào ô nhập
+            # Di chuột và click vào ô nhập để kích hoạt con trỏ
             input_box.click()
-            time.sleep(random.uniform(1.0, 2.0))
+            time.sleep(random.uniform(1.0, 1.8))
 
-            # Gõ nội dung bình luận
+            # Gõ nội dung bình luận mô phỏng người thật
             self.human_type(input_box, comment_text)
-            time.sleep(random.uniform(1.2, 2.5))
+            time.sleep(random.uniform(1.5, 2.5))
 
-            # Nhấn Enter để gửi
+            # Nhấn Enter để gửi bình luận
             self.page.keyboard.press("Enter")
-            time.sleep(random.uniform(3, 5))
+            time.sleep(random.uniform(3, 4.5))
+
+            # Kiểm tra xem nút Gửi (icon máy bay giấy / submit) có cần click thêm không
+            try:
+                send_btn = self.page.locator('div[aria-label="Bình luận"][role="button"], div[aria-label="Comment"][role="button"], div[aria-label="Gửi"][role="button"]').first
+                if send_btn.count() > 0 and send_btn.is_visible():
+                    send_btn.click()
+                    time.sleep(2)
+            except Exception:
+                pass
 
             return True, "Bình luận thành công"
 

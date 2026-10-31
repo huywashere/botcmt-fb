@@ -90,14 +90,14 @@ class BotWorker:
             consecutive_errors = 0
 
             # Cấu hình danh sách Fanpage xoay vòng
-            fanpages_raw = get_setting("fanpage_rotation_list", "Vườn Phim").strip()
+            fanpages_raw = get_setting("fanpage_rotation_list", "Flexphim").strip()
             fanpages = [fp.strip() for fp in fanpages_raw.split(",") if fp.strip()]
             current_page_idx = 0
             current_page_comments_count = 0
             rotate_threshold = int(get_setting("rotate_every_n_comments", "5"))
 
             # 1. TỰ ĐỘNG CHUYỂN ĐỔI SANG FANPAGE ĐẠI DIỆN TRƯỚC TIÊN (NGAY KHI MỞ)
-            active_page = get_selected_fanpage() or (fanpages[0] if fanpages else "Flex Phim")
+            active_page = get_selected_fanpage() or (fanpages[0] if fanpages else "Flexphim")
             if active_page:
                 self.notify_ui("status", f"Đang tự động chuyển đổi danh tính sang Fanpage '{active_page}'...")
                 self.browser.switch_to_fanpage(active_page)
@@ -208,7 +208,7 @@ class BotWorker:
                         continue
 
                     # Xác định Fanpage đại diện đang active
-                    current_fanpage_name = fanpages[current_page_idx] if fanpages else "Fanpage"
+                    current_fanpage_name = active_page or (fanpages[current_page_idx] if fanpages else "Flexphim")
 
                     # Sinh bình luận thông minh bằng Gemini Vision / Text / Spintax
                     self.notify_ui("status", f"AI đang phân tích ngữ cảnh & hình ảnh bài viết cho '{current_fanpage_name}'...")
@@ -296,9 +296,12 @@ class BotWorker:
                 # Sau khi hết lượt bài, chờ theo scan_interval
                 scan_minutes = int(get_setting("scan_interval", "5"))
                 if commented_this_round == 0:
-                    self.notify_ui("status", f"Lượt quét vừa rồi không có bài viết chứa từ khóa phim ('{keywords_raw[:20]}...'). Lần quét tiếp sau {scan_minutes} phút...")
+                    if not posts:
+                        self.notify_ui("status", f"Chưa tìm thấy bài viết mới trên bảng tin trong lượt này. Lần quét tiếp theo sau {scan_minutes} phút...")
+                    else:
+                        self.notify_ui("status", f"Các bài quét được đã bình luận trước đó hoặc chưa khớp tiêu chí. Lần quét tiếp sau {scan_minutes} phút...")
                 else:
-                    self.notify_ui("status", f"Đã quét và bình luận xong lượt này. Lần quét tiếp theo sau {scan_minutes} phút...")
+                    self.notify_ui("status", f"Đã hoàn thành bình luận {commented_this_round} bài viết. Lần quét tiếp theo sau {scan_minutes} phút...")
                 for sec in range(scan_minutes * 60, 0, -1):
                     if not self.is_running:
                         break
