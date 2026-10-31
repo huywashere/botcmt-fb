@@ -94,8 +94,10 @@ class DesktopAPI:
 
     def open_login_browser(self):
         """Mở cửa sổ Chrome thật để người dùng tự do đăng nhập và quản lý Fanpage an toàn"""
-        if self.login_browser is None:
-            self.login_browser = BrowserEngine(headless=False)
+        if self.login_browser:
+            self.login_browser.close()
+            self.login_browser = None
+        self.login_browser = BrowserEngine(headless=False)
         self.login_browser.open_for_login()
         self.live_status = "Đang mở trình duyệt đăng nhập Facebook..."
         return True

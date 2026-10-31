@@ -13,6 +13,18 @@ class BrowserEngine:
     _active_instance = None
 
     @staticmethod
+    def get_system_chrome_path():
+        candidates = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.expanduser(r"~\AppData\Local\Google\Chrome\Application\chrome.exe")
+        ]
+        for p in candidates:
+            if os.path.exists(p):
+                return p
+        return None
+
+    @staticmethod
     def parse_proxy(proxy_str):
         """Chuẩn hóa cấu hình proxy hỗ trợ IP:Port:User:Pass hoặc http://..."""
         if not proxy_str or not proxy_str.strip():
@@ -98,16 +110,24 @@ class BrowserEngine:
 
         proxy_config = BrowserEngine.parse_proxy(self.proxy)
 
-        self.context = self.playwright.chromium.launch_persistent_context(
-            user_data_dir=DATA_DIR,
-            headless=self.headless,
-            viewport={"width": 1280, "height": 800},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            locale="vi-VN",
-            timezone_id="Asia/Ho_Chi_Minh",
-            proxy=proxy_config,
-            args=args
-        )
+        chrome_path = BrowserEngine.get_system_chrome_path()
+        channel = "chrome" if chrome_path else None
+
+        launch_kwargs = {
+            "user_data_dir": DATA_DIR,
+            "headless": self.headless,
+            "viewport": {"width": 1280, "height": 800},
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "locale": "vi-VN",
+            "timezone_id": "Asia/Ho_Chi_Minh",
+            "proxy": proxy_config,
+            "ignore_default_args": ["--enable-automation"],
+            "args": args
+        }
+        if channel:
+            launch_kwargs["channel"] = channel
+
+        self.context = self.playwright.chromium.launch_persistent_context(**launch_kwargs)
 
         BrowserEngine._active_instance = self
 
@@ -140,12 +160,24 @@ class BrowserEngine:
             self.page = None
 
     def open_for_login(self):
-        """Mở trình duyệt trực quan để người dùng tự đăng nhập và vượt 2FA"""
-        self.headless = False
-        self.start()
-        self.page.goto("https://www.facebook.com", timeout=60000)
-        # Giữ trình duyệt mở cho người dùng thao tác
-        return True
+        """Mở trình duyệt trực quan để người dùng tự đăng nhập và vượt 2FA (dùng Chrome thật không dính cờ bot Arkose Labs)"""
+        self.close()
+        chrome_path = BrowserEngine.get_system_chrome_path()
+        if chrome_path:
+            import subprocess
+            subprocess.Popen([
+                chrome_path,
+                f"--user-data-dir={DATA_DIR}",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "https://www.facebook.com"
+            ])
+            return True
+        else:
+            self.headless = False
+            self.start()
+            self.page.goto("https://www.facebook.com", timeout=60000)
+            return True
 
     def check_is_logged_in(self):
         """Kiểm tra tài khoản đã đăng nhập Facebook hay chưa"""
