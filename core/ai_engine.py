@@ -97,18 +97,18 @@ class AIEngine:
 Bạn là: {persona} (Đại diện cho {fanpage_name}).
 Chủ đề trọng tâm: {topic}.
 
-Nhiệm vụ: Đọc bài viết sau trên Facebook về phim ảnh và viết 1 câu bình luận DUY NHẤT (tối đa 2 câu ngắn, dưới 30 từ).
+Nhiệm vụ: Đọc bài viết sau trên Facebook (có thể về đời sống, tâm sự, hài hước, kinh doanh, công việc hoặc phim ảnh) và viết 1 câu bình luận DUY NHẤT (tối đa 2 câu ngắn, dưới 30 từ).
 
 Bài viết:
 \"\"\"{post_text}\"\"\"
 
 {vision_instruction}
 
-Quy tắc vàng chống Spam & Tránh Facebook Checkpoint:
-1. Giọng văn: Chuẩn người dùng trẻ Việt Nam mê phim, xưng hô tự nhiên (tui, mình, bạn ơi, nè, nha, coi cuốn lắm...).
-2. Phản hồi trúng ý chính:
-   - Nếu bài viết hỏi tìm phim/link xem/tập mới: Gợi ý nhiệt tình đúng nhu cầu hoặc trả lời tên phim nếu nhận diện được qua ảnh.
-   - Nếu bài viết bàn luận về một bộ phim/diễn viên: Đưa ra góc nhìn chân thật của một mọt phim.
+Quy tắc vàng:
+1. Giọng văn: Chuẩn người dùng mạng xã hội Việt Nam thân thiện, vui vẻ, xưng hô tự nhiên (tui, mình, bạn ơi, nè, nha...).
+2. Phản hồi trúng nội dung bài viết:
+   - Nếu bài viết về phim ảnh: Nhận xét cảm nhận của một mọt phim, chia sẻ hoặc gợi ý xem.
+   - Nếu bài viết về đời sống, tâm sự, công việc, hài hước: Bình luận đồng cảm, động viên hoặc pha trò hóm hỉnh, rủ rê tối về qua bên tui cày phim xả stress.
 {brand_instruction}
 3. Tuyệt đối KHÔNG viết câu sáo rỗng máy móc ('cảm ơn đã chia sẻ', 'bài viết hữu ích').
 4. Tuyệt đối KHÔNG dùng hashtag (#), KHÔNG dùng quá 1 icon.
@@ -135,7 +135,6 @@ Quy tắc vàng chống Spam & Tránh Facebook Checkpoint:
             except Exception:
                 pass
 
-        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         payload = {
             "contents": [
                 {
@@ -144,25 +143,32 @@ Quy tắc vàng chống Spam & Tránh Facebook Checkpoint:
             ],
             "generationConfig": {
                 "temperature": 0.85,
-                "maxOutputTokens": 100
+                "maxOutputTokens": 1000,
+                "thinkingConfig": {
+                    "thinkingBudget": 0
+                }
             }
         }
 
-        try:
-            resp = requests.post(endpoint, json=payload, timeout=18)
-            if resp.status_code == 200:
-                result = resp.json()
-                candidates = result.get("candidates", [])
-                if candidates:
-                    resp_parts = candidates[0].get("content", {}).get("parts", [])
-                    if resp_parts:
-                        comment = resp_parts[0].get("text", "").strip()
-                        comment = comment.strip('"').strip("'")
-                        if comment:
-                            return cls.cloak_links(comment)
-            return cls.cloak_links(cls.get_fallback_comment())
-        except Exception:
-            return cls.cloak_links(cls.get_fallback_comment())
+        models_to_try = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"]
+        for m in models_to_try:
+            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+            try:
+                resp = requests.post(endpoint, json=payload, timeout=15)
+                if resp.status_code == 200:
+                    result = resp.json()
+                    candidates = result.get("candidates", [])
+                    if candidates:
+                        resp_parts = candidates[0].get("content", {}).get("parts", [])
+                        if resp_parts:
+                            comment = resp_parts[0].get("text", "").strip()
+                            comment = comment.strip('"').strip("'")
+                            if comment:
+                                return cls.cloak_links(comment)
+            except Exception:
+                continue
+
+        return cls.cloak_links(cls.get_fallback_comment())
 
 if __name__ == "__main__":
     print("Test spintax:", AIEngine.get_fallback_comment())
