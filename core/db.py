@@ -113,10 +113,10 @@ def init_db():
         "max_delay": "130",          # Độ trễ tối đa an toàn (~2 phút)
         "fb_delay_preset": "2",      # Preset giãn cách cmt FB (1, 2, 3, 5 phút)
         "topic": "Phim ảnh, review phim, phim bộ Hàn/Trung/Âu Mỹ, chia sẻ cảm nhận điện ảnh, gợi ý phim hay",
-        "persona": "Một bạn trẻ mê phim chính hiệu (mọt phim), xưng tui/mình thân mật, chia sẻ chân thực, tự nhiên như người dùng mạng xã hội thực thụ (dùng các từ: nè, nha, coi cuốn, mượt lắm...)",
-        "brand_mention": "flexphim",
+        "persona": "Bạn trẻ Gen Z mê phim, cmt siêu ngắn gọn (8-15 từ), xưng tui bạn bè thân mật, dùng từ lóng giới trẻ (cuốn xỉu, nét căng, mượt đét, bao dính), rủ ghé web tui flexphim xem phim",
+        "brand_mention": "web tui flexphim",
         "keywords": "phim, tập, diễn viên, mọt phim, xem ở đâu, review, netflix, bộ này, tên phim, chiếu rạp, sub, vietsub, thuyết minh, web phim",
-        "spintax_samples": "{ghé|qua|vô} flexphim {xem|coi} thử đi nè, {bản đẹp|mượt} lắm á\n{tối|rảnh} {qua|ghé|lên} flexphim cày thử xem sao nha\nphim này {trên|bên} flexphim có {bản nét|vietsub} rồi á bạn\n{ghé|lên} flexphim tìm thử nha bạn ơi, {nhiều phim hay|cập nhật nhanh} lắm\n{thử đổi gió|tối về} qua flexphim {xả stress|thư giãn} đi nè\n{bên|trên} flexphim có cập nhật tập mới rồi á, {qua|ghé} coi thử nha\ncoi {trên|bên} flexphim thử nha, mượt mà không quảng cáo phiền nè\n{qua|ghé} flexphim ủng hộ tui nha, có đủ bản đẹp luôn",
+        "spintax_samples": "{phim cuốn xỉu|mê bộ này ghê|cảnh này bao dính}, {ghé|qua} web tui flexphim xem phim {với tui nè|nha bạn ơi}!\n{tối rảnh|hôm nào rảnh} {ghé|qua|vô} web tui flexphim xem phim {xả stress|thư giãn} nha bạn ơi!\nbộ này {bên|trên} web tui flexphim có bản {nét căng|full hd} luôn á, {qua|ghé} cày thử nè!\ncoi trên web tui flexphim {mượt đét|bao mượt} luôn á bạn ơi, {ghé|qua} xem thử nè!\n{cuốn thực sự|đỉnh chóp luôn}, tối {qua|ghé} web tui flexphim cày trọn bộ {với tui nè|nha}!\nlên web tui flexphim xem phim {mượt mà không lo lag|bao phê} nè bạn ơi!",
         "auto_comment_enabled": "0",
         "daily_limit": "25",         # Giới hạn an toàn chống ban tuyệt đối: tối đa 25 cmt/ngày
         "active_start": "08:00",     # Chỉ chạy từ 8h sáng

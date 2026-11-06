@@ -6,16 +6,17 @@ import requests
 from core.db import get_setting
 
 CASUAL_BRAND_PHRASES = [
-    "ghé flexphim",
-    "trên flexphim",
-    "qua flexphim",
-    "lên flexphim",
-    "vô flexphim",
-    "bên flexphim",
-    "coi trên flexphim",
-    "tìm ở flexphim",
-    "xem trên flexphim",
-    "qua bên flexphim"
+    "ghé web tui flexphim xem phim nè",
+    "qua web tui flexphim cày nha",
+    "lên web tui flexphim coi bản nét căng á",
+    "ghé web tui flexphim xem phim xả stress đi",
+    "qua web tui flexphim kiếm thử nha",
+    "bên web tui flexphim có full á",
+    "tối rảnh ghé web tui flexphim cày nè",
+    "coi trên web tui flexphim mượt đét luôn bạn ơi",
+    "vô web tui flexphim xem bao dính á",
+    "ghé web tui flexphim xem phim với tui nè",
+    "lên web tui flexphim xem phim mượt đét nè bạn ơi"
 ]
 
 VIETNAMESE_DIACRITICS = set(
@@ -184,11 +185,12 @@ class AIEngine:
         lines = [line.strip() for line in raw_samples.split("\n") if line.strip()]
         if not lines:
             sample_defaults = [
-                "ghé flexphim xem thử đi nè bạn, mượt lắm á",
-                "tối rảnh qua flexphim cày thử xem sao nha",
-                "phim này trên flexphim có bản nét rồi á",
-                "lên flexphim tìm thử nha bạn ơi, nhiều phim hay lắm",
-                "thử đổi gió qua flexphim thư giãn đi nè"
+                "Phim cuốn xỉu á, ghé web tui flexphim xem phim với tui nè!",
+                "Tối rảnh ghé web tui flexphim xem phim xả stress nha bạn ơi!",
+                "Bộ này bên web tui flexphim có bản nét căng luôn á, ghé cày thử nè!",
+                "Ghé web tui flexphim xem phim bao mượt đét luôn á bạn ơi!",
+                "Cuốn thực sự, tối qua web tui flexphim cày phim với tui nha!",
+                "Lên web tui flexphim xem phim mượt đét khỏi lo giật lag nè bạn ơi!"
             ]
             return random.choice(sample_defaults)
         chosen_template = random.choice(lines)
@@ -203,36 +205,32 @@ class AIEngine:
         if not api_key:
             return cls.sanitize_comment(cls.cloak_links(cls.get_fallback_comment()))
 
-        topic = get_setting("topic", "Chia sẻ trải nghiệm, thảo luận vui vẻ")
-        persona = get_setting("persona", "Đại diện thân thiện, dí dỏm, trả lời ngắn gọn như người dùng thật")
+        topic = get_setting("topic", "Phim ảnh, review phim, giải trí")
+        persona = get_setting("persona", "Bạn trẻ Gen Z mê phim, cmt siêu ngắn gọn (8-15 từ), xưng tui bạn bè thân mật, dùng từ lóng giới trẻ (cuốn xỉu, nét căng, mượt đét, bao dính), rủ ghé web tui flexphim xem phim")
         
         # Chọn ngẫu nhiên cụm từ nhắc thương hiệu tự nhiên (KHÔNG kèm tên web full)
         chosen_brand_phrase = random.choice(CASUAL_BRAND_PHRASES)
 
         brand_instruction = f"""
-QUY TẮC BẮT BUỘC NHẮC THƯƠNG HIỆU:
-- Bình luận BẮT BUỘC phải chứa tự nhiên một cụm từ nhắc đến flexphim: ví dụ "{chosen_brand_phrase}" (hoặc "ghé flexphim", "trên flexphim", "qua flexphim", "lên flexphim", "bên flexphim", "coi trên flexphim").
-- Tuyệt đối KHÔNG viết tên miền hay link web (tuyệt đối KHÔNG viết .top, .com, chấm top, =>...).
-- Ví dụ mẫu câu tự nhiên ăn khách:
-  + "Nghe cuốn thế! Phim này trên flexphim có bản nét chưa bạn ơi, để tối ghé cày thử?"
-  + "Cày bộ này cuốn xỉu á, hôm nào ghé flexphim xem thử đi nè bạn!"
-  + "Tối về qua flexphim cày phim xả stress đi bạn ơi, nhiều phim đỉnh lắm!"
-  + "Phim này coi bên flexphim bản nét căng luôn á bạn!"
+QUY TẮC BẮT BUỘC RỦ GHÉ "WEB TUI XEM PHIM":
+- Bình luận BẮT BUỘC phải khéo léo đề cập rủ ghé web tui xem phim (ví dụ: "{chosen_brand_phrase}").
+- Dùng các cụm từ tự nhiên như: "ghé web tui flexphim xem phim nè", "qua web tui flexphim cày nha", "bên web tui flexphim có full á", "ghé web tui flexphim xem phim với tui nè".
+- TUYỆT ĐỐI KHÔNG viết tên miền hay link web (CẤM viết .top, .com, chấm top, =>, link...). Chỉ dùng chữ "web tui flexphim" hoặc "flexphim".
 """
 
         vision_instruction = ""
         if image_url and get_setting("gemini_vision_enabled", "1") == "1":
-            vision_instruction = "LƯU Ý ĐẶC BIỆT: Bài viết này có hình ảnh đính kèm. Hãy quan sát ảnh để nhận diện tên bộ phim, diễn viên hoặc tình huống cảnh quay, từ đó viết bình luận chính xác tên phim và bối cảnh!"
+            vision_instruction = "LƯU Ý: Bài viết có ảnh đính kèm. Nhìn ảnh để nhận diện nhanh tên phim, diễn viên hoặc cảnh phim để cmt trúng nội dung!"
 
         fallback_style = ""
         if is_general_post:
-            fallback_style = "ĐẶC BIỆT: Đây là bài viết thường văn bản (tâm sự, đời sống, hài hước, status cá nhân). Bình luận thật đơn giản, ngắn gọn (1-2 câu), tự nhiên như bạn bè nói chuyện, pha trò vui vẻ hoặc đồng cảm, có thể khéo léo rủ tối về qua flexphim cày phim xả stress."
+            fallback_style = "ĐẶC BIỆT: Đây là bài viết thường văn bản (tâm sự, hài hước, đời sống). Cmt 1 câu ngắn gọn tự nhiên, đồng cảm hoặc pha trò rồi rủ tối ghé web tui flexphim xem phim xả stress."
 
         prompt = f"""
-Bạn là: {persona} (Đại diện cho {fanpage_name}).
+Bạn là: {persona}.
 Chủ đề trọng tâm: {topic}.
 
-Nhiệm vụ: Đọc bài viết sau trên {platform} (có thể về đời sống, tâm sự, hài hước, kinh doanh, công việc hoặc phim ảnh) và viết 1 câu bình luận DUY NHẤT (tối đa 2 câu ngắn, dưới 25 từ).
+Nhiệm vụ: Đọc bài viết sau trên {platform} và viết DUY NHẤT 1 CÂU BÌNH LUẬN SIÊU NGẮN GỌN (từ 8 đến 15 từ).
 
 Bài viết:
 \"\"\"{post_text}\"\"\"
@@ -240,17 +238,21 @@ Bài viết:
 {vision_instruction}
 {fallback_style}
 
-Quy tắc vàng:
-1. Giọng văn: Chuẩn người dùng mạng xã hội Việt Nam thân thiện, vui vẻ, xưng hô tự nhiên (tui, mình, bạn ơi, nè, nha...).
-2. Kích thích tương tác & Ăn Top View (Cực kỳ quan trọng):
-   - Phản hồi trúng cảm xúc bài viết (háo hức, đồng cảm, bất ngờ, cười vui).
-   - Nếu bài viết về phim ảnh, cảnh nóng, nội dung người lớn 18+: Bình luận dí dỏm, khéo léo, đồng điệu với ngữ cảnh, tự nhiên gợi ý qua flexphim xem phim xả stress hoặc cày bản full nét căng (ví dụ: "cảnh này cuốn thật, bên flexphim có bản full nét căng á bạn", "bộ này tui cày bên flexphim phê xỉu!").
-   - Nếu bài viết thường văn bản: Bình luận đơn giản, động viên, pha trò hóm hỉnh rồi rủ tối về qua flexphim cày phim giải trí.
-   - Luôn kèm 1 câu hỏi mở nhẹ nhàng hoặc nhận xét chân thật (ví dụ: "bạn coi đến đoạn cuối chưa?", "bộ này xem cuốn xỉu luôn á!"). Khi tác giả hoặc người khác like/rep lại, bình luận sẽ được thuật toán đẩy lên Top 1 và nhận hàng chục ngàn lượt xem!
+QUY TẮC BẮT BUỘC (TUÂN THỦ 100%):
+1. ĐỘ DÀI: BẮT BUỘC DUY NHẤT 1 CÂU, CỰC KỲ NGẮN GỌN (từ 8 đến 15 từ). Tuyệt đối KHÔNG viết dài dòng lê thê hay 2-3 câu!
+2. NGÔN NGỮ GIỚI TRẺ (Gen Z):
+   - Xưng hô thân mật: "tui", "bạn ơi", thêm từ cảm thán: "nè", "nha", "á".
+   - Dùng từ lóng tự nhiên của giới trẻ mê phim: "cuốn xỉu", "nét căng", "mượt đét", "bao dính", "xả stress", "cày phim".
+   - Giọng điệu chân thật như một người bạn đang trò chuyện rủ rê xem phim.
 3. {brand_instruction}
-4. Tuyệt đối KHÔNG viết câu sáo rỗng máy móc ('cảm ơn đã chia sẻ', 'bài viết hữu ích').
-5. Tuyệt đối KHÔNG dùng hashtag (#), KHÔNG dùng quá 1 icon.
-6. Chỉ trả về duy nhất chuỗi bình luận ngắn gọn, không kèm ngoặc kép hay lời mở đầu.
+4. CÁC MẪU CÂU CHUẨN ĐỂ HỌC THEO:
+   - "Phim cuốn xỉu á, tối ghé web tui flexphim xem phim nha bạn ơi!"
+   - "Cảnh này bao dính luôn, ghé web tui flexphim xem phim nét căng nè!"
+   - "Bộ này bên web tui flexphim có full á, ghé cày thử xả stress đi bạn ơi!"
+   - "Mê bộ này ghê, tối rảnh ghé web tui flexphim xem phim với tui nè!"
+   - "Coi trên web tui flexphim mượt đét luôn, tối ghé cày nha bạn ơi!"
+5. CẤM TUYỆT ĐỐI: KHÔNG dùng đuôi tên miền (.top, .com, chấm top...), KHÔNG hashtag (#), KHÔNG câu sáo rỗng máy móc. Tối đa 1 icon.
+6. ĐẦU RA: Chỉ trả về đúng 1 câu bình luận, không dấu ngoặc kép, không lời giải thích.
 """
 
         parts = [{"text": prompt}]
@@ -309,8 +311,7 @@ Quy tắc vàng:
                             comment = comment.strip('"').strip("'")
                             if comment:
                                 if "flexphim" not in comment.lower():
-                                    phrase = random.choice(CASUAL_BRAND_PHRASES)
-                                    comment = f"{comment} Hôm nào rảnh {phrase} xem thử nha bạn!"
+                                    comment = f"{comment} Tối rảnh ghé web tui flexphim xem phim nha bạn ơi!"
                                 return cls.sanitize_comment(cls.cloak_links(comment))
             except Exception:
                 continue
