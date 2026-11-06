@@ -188,15 +188,16 @@ class XWorker:
                         if is_x_post_already_commented(post_url):
                             continue
 
-                        # Đảm bảo bài viết bắt buộc phải liên quan đến phim ảnh (dù nhẹ)
-                        if not is_movie_related(post_content):
+                        target_mode = get_setting("x_target_mode", "viral")
+                        is_movie = is_movie_related(post_content)
+                        if target_mode == "movie_only" and not is_movie:
                             continue
 
-                        is_general = p.get("is_general_post", False)
+                        is_general = p.get("is_general_post", not is_movie)
 
                         # Sinh bình luận thông minh bằng Gemini (nhắc tự nhiên: ghé flexphim, trên flexphim...)
                         if is_general:
-                            self.notify_ui("x_status", f"AI đang tạo bình luận cho Tweet thường: {post_url[:35]}...")
+                            self.notify_ui("x_status", f"AI đang tạo cmt bắt trend cho Tweet viral: {post_url[:35]}...")
                         else:
                             self.notify_ui("x_status", f"AI đang phân tích Tweet phim: {post_url[:35]}...")
 

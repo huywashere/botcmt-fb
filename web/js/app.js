@@ -87,7 +87,9 @@ async function loadConfig() {
       if (document.getElementById('selectThreadsInterval')) document.getElementById('selectThreadsInterval').value = settings.threads_scan_interval || '2';
 
       // Cấu hình X (Twitter)
-      if (document.getElementById('inputXKeywords')) document.getElementById('inputXKeywords').value = settings.x_keywords || 'phim, review phim, web phim, phim hay, netflix, phim rạp, cày phim, mọt phim, phim bộ, spoil phim, trailer phim, chiếu rạp, kdrama, anime';
+      if (document.getElementById('inputXKeywords')) document.getElementById('inputXKeywords').value = settings.x_keywords || 'trend, drama, hot, showbiz, hóng, hài hước, meme, netflix, phim, anime, idol, bóng đá, việt nam';
+      if (document.getElementById('selectXTargetMode')) document.getElementById('selectXTargetMode').value = settings.x_target_mode || 'viral';
+      if (document.getElementById('selectXSearchType')) document.getElementById('selectXSearchType').value = settings.x_search_type || 'top';
       if (document.getElementById('selectXInterval')) document.getElementById('selectXInterval').value = settings.x_scan_interval || '2';
       if (document.getElementById('inputXDailyLimit')) document.getElementById('inputXDailyLimit').value = settings.x_daily_limit || '100';
       if (document.getElementById('inputXTelegramAlerts')) document.getElementById('inputXTelegramAlerts').checked = (settings.x_telegram_alerts_enabled !== '0');
@@ -898,7 +900,13 @@ function saveXDailyLimit(val) {
 
 function setXKeywordsPreset(type) {
   let kw = "";
-  if (type === 'hot') {
+  if (type === 'viral') {
+    kw = "trend, drama, hot, showbiz, hóng, hài hước, meme, netflix, phim, phim rạp, anime, idol, bóng đá, việt nam";
+    if (document.getElementById('selectXTargetMode')) {
+      document.getElementById('selectXTargetMode').value = 'viral';
+      updateXTargetMode('viral');
+    }
+  } else if (type === 'hot') {
     kw = "phim rạp, phim hay, bom tấn, review phim, spoil phim, chiếu rạp, rạp chiếu phim, vé xem phim";
   } else if (type === 'netflix') {
     kw = "netflix, cày phim, web phim, mọt phim, phim bộ, xem phim tối, phim hot";
@@ -911,6 +919,20 @@ function setXKeywordsPreset(type) {
     document.getElementById('inputXKeywords').value = kw;
     saveXKeywords(kw);
     showToast("Đã nạp bộ từ khóa bắt trend mới!");
+  }
+}
+
+function updateXTargetMode(val) {
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.set_setting("x_target_mode", val);
+    showToast(val === "viral" ? "Đã chuyển: Đón Trend Nhiều View (Mọi chủ đề)!" : "Đã chuyển: Chỉ cào bài Phim ảnh!");
+  }
+}
+
+function updateXSearchType(val) {
+  if (window.pywebview && window.pywebview.api) {
+    window.pywebview.api.set_setting("x_search_type", val);
+    showToast(val === "top" ? "Đã chuyển nguồn: Top Thịnh Hành (Nhiều view nhất)!" : "Đã chuyển nguồn: Mới nhất (Vừa đăng)!");
   }
 }
 

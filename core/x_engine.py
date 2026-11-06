@@ -376,13 +376,20 @@ class XEngine:
         blacklist_raw = get_setting("blacklist_keywords", "tuyển dụng, bán hàng, giá rẻ, vay tiền, scam, lừa đảo, cờ bạc")
         blacklist = [b.strip().lower() for b in blacklist_raw.split(",") if b.strip()]
 
+        target_mode = get_setting("x_target_mode", "viral")
+        search_type = get_setting("x_search_type", "top")
+
         for kw in chosen_keywords:
             if len(scanned_results) >= max_posts:
                 break
 
             # Đảm bảo 100% kết quả từ cộng đồng người Việt Nam trên X
+            # Nếu là search_type == "top" -> Tìm theo Top Thịnh Hành (Nhiều view nhất, không có &f=live)
             search_query = kw if "lang:" in kw else f"{kw} lang:vi"
-            search_url = f"{BASE_URL}/search?q={urllib.parse.quote(search_query)}&f=live"
+            if search_type == "top":
+                search_url = f"{BASE_URL}/search?q={urllib.parse.quote(search_query)}"
+            else:
+                search_url = f"{BASE_URL}/search?q={urllib.parse.quote(search_query)}&f=live"
             try:
                 self.page.goto(search_url, wait_until="domcontentloaded", timeout=18000)
                 time.sleep(random.uniform(2.5, 3.5))
@@ -458,8 +465,9 @@ class XEngine:
                     if not is_vietnamese_text(snippet_clean):
                         continue
 
-                    # BẮT BUỘC: Tweet phải chung chủ đề hoặc liên quan tới phim ảnh (dù liên quan nhẹ)
-                    if not is_movie_related(snippet_clean, keywords):
+                    # Kiểm tra chủ đề phim (nếu cài đặt chỉ cào bài phim)
+                    is_movie = is_movie_related(snippet_clean, keywords)
+                    if target_mode == "movie_only" and not is_movie:
                         continue
 
                     # Lọc từ khóa cấm / blacklist
@@ -472,7 +480,7 @@ class XEngine:
                         "content": snippet_clean[:280],
                         "author": author[:50],
                         "keyword": kw,
-                        "is_general_post": False
+                        "is_general_post": not is_movie
                     })
 
             except Exception as e:
@@ -550,8 +558,9 @@ class XEngine:
                     if not is_vietnamese_text(snippet_clean):
                         continue
 
-                    # BẮT BUỘC: Tweet phải chung chủ đề hoặc liên quan tới phim ảnh (dù liên quan nhẹ)
-                    if not is_movie_related(snippet_clean, keywords):
+                    # Kiểm tra chủ đề phim (nếu cài đặt chỉ cào bài phim)
+                    is_movie = is_movie_related(snippet_clean, keywords)
+                    if target_mode == "movie_only" and not is_movie:
                         continue
 
                     if any(bad in snippet_clean.lower() for bad in blacklist):
@@ -561,8 +570,8 @@ class XEngine:
                         "url": clean_url,
                         "content": snippet_clean[:280],
                         "author": author[:50],
-                        "keyword": "Tweet thường (Tự động chuyển)",
-                        "is_general_post": True
+                        "keyword": "Bảng tin Hot (Dành cho bạn)",
+                        "is_general_post": not is_movie
                     })
             except Exception as e:
                 print("[X] Lỗi cào bảng tin tweet thường:", str(e))

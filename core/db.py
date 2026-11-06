@@ -151,7 +151,9 @@ def init_db():
         # Thông báo Telegram riêng cho Threads:
         "threads_telegram_alerts_enabled": "1",
         # Cấu hình riêng cho X (Twitter) Auto Bot:
-        "x_keywords": "phim, phim 18+, review phim, web phim, phim hay, netflix, phim rạp, cày phim, mọt phim, phim bộ, phim người lớn, cảnh nóng, spoil phim, trailer phim, chiếu rạp, kdrama, anime",
+        "x_keywords": "trend, drama, hot, showbiz, hóng, hài hước, meme, netflix, phim, phim rạp, anime, idol, bóng đá, việt nam",
+        "x_target_mode": "viral",        # "viral" (Đón trend nhiều view mọi chủ đề) hoặc "movie_only" (Chỉ phim)
+        "x_search_type": "top",          # "top" (Top thịnh hành nhiều view nhất) hoặc "live" (Mới nhất)
         "x_scan_interval": "2",
         "x_min_delay": "110",
         "x_max_delay": "130",

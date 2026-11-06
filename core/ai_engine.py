@@ -291,7 +291,16 @@ QUY TẮC BẮT BUỘC RỦ GHÉ "WEB TUI XEM PHIM":
 
         fallback_style = ""
         if is_general_post:
-            fallback_style = "ĐẶC BIỆT: Đây là bài viết thường văn bản (tâm sự, hài hước, đời sống). Cmt 1 câu ngắn gọn tự nhiên, đồng cảm hoặc pha trò rồi rủ tối ghé web tui flexphim xem phim xả stress."
+            fallback_style = """
+ĐẶC BIỆT: Đây là bài viết xu hướng tổng hợp trên mạng xã hội (drama showbiz, tin tức hot, hài hước/meme, tâm sự giới trẻ, thể thao...).
+HƯỚNG DẪN VIẾT BÌNH LUẬN "BẮT TREND" ĐỂ HÚT LƯỢT XEM VÀ TÒ MÒ:
+- Bình luận 1 câu cực ngắn gọn, hài hước, hùa vui hoặc đồng cảm theo nội dung bài viết, sau đó khéo léo chốt rủ tối ghé web tui flexphim xem phim xả stress / chill chill / cày phim cho lành.
+- Cách liên kết tự nhiên siêu dính:
+  + Nếu là bài Drama/Hóng biến: "Drama căng đét luôn, tối lên flexphim cày phim chill chill cho lành nè!" hoặc "Hóng biến ghê á, tối ghé web tui flexphim xem phim xả stress đi b!"
+  + Nếu là bài Hài hước/Meme: "Haha cười xỉu luôn á, tối qua web tui flexphim xem phim với tui nè!" hoặc "Cười bể bụng, tối lên flexphim cày phim tiếp thôi cả nhà!"
+  + Nếu là bài Tâm sự/Cuộc sống/Học tập: "Đồng cảm ghê, tối rảnh ghé web tui flexphim xem phim xả stress nha bạn ơi!"
+  + Nếu là bài Thể thao/Tin tức: "Trận này cháy xỉu, tối ghé web tui flexphim xem phim giải trí tiếp nè!"
+"""
 
         prompt = f"""
 Bạn là: {persona}.

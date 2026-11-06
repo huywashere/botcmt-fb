@@ -526,13 +526,32 @@
                 <span class="text-slate-400 whitespace-nowrap">Từ khóa cào:</span>
                 <input id="inputXKeywords" type="text" onchange="saveXKeywords(this.value)" class="w-full bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500 text-xs font-mono" placeholder="phim, review phim, web phim, netflix...">
               </div>
-              <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 pl-16">
+              <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 pl-16 flex-wrap gap-y-1">
                 <span class="text-slate-500">Bắt trend:</span>
+                <button type="button" onclick="setXKeywordsPreset('viral')" class="px-2 py-0.5 rounded bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 font-bold border border-emerald-600/60 shadow-sm" title="Đón trend nhiều view nhất từ mọi chủ đề hot">🌟 Đón Trend Nhiều View</button>
                 <button type="button" onclick="setXKeywordsPreset('hot')" class="px-1.5 py-0.5 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-800/40" title="Cào phim rạp và bom tấn hot">🔥 Phim Rạp & Hot</button>
                 <button type="button" onclick="setXKeywordsPreset('netflix')" class="px-1.5 py-0.5 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-800/40" title="Cào phim bộ và netflix">🍿 Netflix & Cày Phim</button>
                 <button type="button" onclick="setXKeywordsPreset('18')" class="px-1.5 py-0.5 rounded bg-pink-950/70 hover:bg-pink-900 text-pink-300 border border-pink-800/40" title="Cào phim 18+ và cảnh nóng">🔞 Phim 18+ & Cảnh Nóng</button>
                 <button type="button" onclick="setXKeywordsPreset('anime')" class="px-1.5 py-0.5 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-800/40" title="Cào anime và phim Hàn">🎬 Anime & Kdrama</button>
               </div>
+            </div>
+
+            <!-- Target Mode (Viral vs Movie Only) -->
+            <div class="flex items-center space-x-1.5 whitespace-nowrap" title="Chế độ tiếp cận">
+              <span class="text-slate-400">Mục tiêu:</span>
+              <select id="selectXTargetMode" onchange="updateXTargetMode(this.value)" class="bg-dark-input border border-emerald-500/50 rounded-lg px-2 py-1.5 text-emerald-300 font-semibold focus:outline-none focus:border-emerald-500">
+                <option value="viral" selected>🔥 Đón Trend Nhiều View (Mọi chủ đề)</option>
+                <option value="movie_only">🎬 Chỉ bài Phim ảnh</option>
+              </select>
+            </div>
+
+            <!-- Search Type (Top vs Live) -->
+            <div class="flex items-center space-x-1.5 whitespace-nowrap" title="Nguồn bài viết trên X">
+              <span class="text-slate-400">Nguồn:</span>
+              <select id="selectXSearchType" onchange="updateXSearchType(this.value)" class="bg-dark-input border border-sky-500/50 rounded-lg px-2 py-1.5 text-sky-300 font-semibold focus:outline-none focus:border-sky-500">
+                <option value="top" selected>🌟 Top Thịnh Hành (Nhiều view)</option>
+                <option value="live">⏱️ Mới nhất (Vừa đăng)</option>
+              </select>
             </div>
 
             <!-- Scan Interval dropdown -->
