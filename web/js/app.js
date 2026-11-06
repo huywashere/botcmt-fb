@@ -93,6 +93,13 @@ async function loadConfig() {
       if (document.getElementById('inputXTelegramAlerts')) document.getElementById('inputXTelegramAlerts').checked = (settings.x_telegram_alerts_enabled !== '0');
       updateXTelegramUI(settings.x_telegram_alerts_enabled !== '0');
 
+      // Cấu hình Anti-Ban X (Twitter)
+      if (document.getElementById('inputXCheckpointProtect')) document.getElementById('inputXCheckpointProtect').checked = (settings.x_checkpoint_protection !== '0');
+      if (document.getElementById('inputXWarmup')) document.getElementById('inputXWarmup').checked = (settings.x_warmup_enabled !== '0');
+      if (document.getElementById('inputXHumanDwell')) document.getElementById('inputXHumanDwell').checked = (settings.x_human_dwell_enabled !== '0');
+      if (document.getElementById('inputXAntiDuplicate')) document.getElementById('inputXAntiDuplicate').checked = (settings.x_anti_duplicate_enabled !== '0');
+      if (document.getElementById('inputXHourlyLimit')) document.getElementById('inputXHourlyLimit').value = settings.x_hourly_limit || '15';
+
       // Cấu hình thời gian cmt chạy nền (Delay Presets: 1, 2, 3, 5 phút)
       const fbPreset = settings.fb_delay_preset || '2';
       if (document.getElementById('selectFbDelayPreset')) document.getElementById('selectFbDelayPreset').value = fbPreset;
@@ -277,6 +284,12 @@ async function saveAllSettings() {
     warmup_enabled: (document.getElementById('inputWarmup') && document.getElementById('inputWarmup').checked) ? '1' : '0',
     fallback_to_general_posts: (document.getElementById('inputFallbackGeneral') && document.getElementById('inputFallbackGeneral').checked) ? '1' : '0',
     blocked_authors: document.getElementById('inputBlockedAuthors') ? document.getElementById('inputBlockedAuthors').value : '',
+    // Cấu hình Anti-Ban X
+    x_checkpoint_protection: (document.getElementById('inputXCheckpointProtect') && document.getElementById('inputXCheckpointProtect').checked) ? '1' : '0',
+    x_warmup_enabled: (document.getElementById('inputXWarmup') && document.getElementById('inputXWarmup').checked) ? '1' : '0',
+    x_human_dwell_enabled: (document.getElementById('inputXHumanDwell') && document.getElementById('inputXHumanDwell').checked) ? '1' : '0',
+    x_anti_duplicate_enabled: (document.getElementById('inputXAntiDuplicate') && document.getElementById('inputXAntiDuplicate').checked) ? '1' : '0',
+    x_hourly_limit: document.getElementById('inputXHourlyLimit') ? document.getElementById('inputXHourlyLimit').value : '15',
   };
   await window.pywebview.api.save_settings(payload);
   showToast("Đã lưu cài đặt hệ thống & tối ưu!");

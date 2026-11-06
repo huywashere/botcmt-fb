@@ -158,7 +158,13 @@ def init_db():
         "x_daily_limit": "100",
         "x_auto_comment_enabled": "0",
         "x_delay_preset": "2",           # Preset giãn cách cmt X (1, 2, 3, 5 phút)
-        "x_telegram_alerts_enabled": "1"
+        "x_telegram_alerts_enabled": "1",
+        # Vũ khí Chống Ban & Chống Checkpoint chuyên sâu cho 𝕏 (Twitter):
+        "x_warmup_enabled": "1",               # Làm ấm session 30s trước khi cào
+        "x_checkpoint_protection": "1",        # Tự ngắt khẩn cấp cứu tài khoản khi có checkpoint
+        "x_hourly_limit": "15",                # Tối đa 15 cmt/giờ chống burst ban
+        "x_human_dwell_enabled": "1",          # Dừng đọc bài 3-6s như người thật trước khi cmt
+        "x_anti_duplicate_enabled": "1"        # Chống trùng lặp nội dung tuyệt đối trên X
     }
 
     for k, v in default_settings.items():

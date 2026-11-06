@@ -44,6 +44,21 @@ class XWorker:
         logs = get_recent_x_logs(limit=200)
         return sum(1 for l in logs if l.get("status") == "Đã gửi" and str(l.get("created_at", "")).startswith(today_str))
 
+    def count_past_hour_comments(self):
+        """Đếm số bình luận X đã gửi thành công trong 60 phút gần nhất (Chống spam theo giờ)"""
+        logs = get_recent_x_logs(limit=100)
+        now_ts = time.time()
+        count = 0
+        for l in logs:
+            if l.get("status") == "Đã gửi" and l.get("created_at"):
+                try:
+                    dt = datetime.strptime(str(l["created_at"]), "%Y-%m-%d %H:%M:%S")
+                    if (now_ts - dt.timestamp()) <= 3600:
+                        count += 1
+                except Exception:
+                    pass
+        return count
+
     def scan_only(self):
         """Chức năng 'Quét thử 𝕏 - chưa gửi' để xem trước danh sách tweet cào được và cmt dự kiến"""
         def _job():
@@ -100,6 +115,14 @@ class XWorker:
                 else:
                     self.engine = XEngine(headless=True)
 
+                # Chế độ làm ấm Bảng tin X trước khi cào (Warm-Up Anti-Ban)
+                if get_setting("x_warmup_enabled", "1") == "1":
+                    self.notify_ui("x_status", "🔥 Chế độ Anti-Ban: Đang lướt Bảng tin 𝕏 30s để làm ấm tài khoản & tạo điểm uy tín...")
+                    try:
+                        self.engine.run_warmup(duration_sec=30)
+                    except Exception as e:
+                        print("Lỗi làm ấm X:", str(e))
+
                 self.notify_ui("x_status", "Tài khoản 𝕏 đã sẵn sàng! Bắt đầu cào chủ đề phim...")
                 session_start_time = time.time()
                 consecutive_errors = 0
@@ -123,6 +146,23 @@ class XWorker:
                         if get_setting("telegram_alerts_enabled", "1") == "1" or get_setting("x_telegram_alerts_enabled", "1") == "1":
                             TelegramNotifier.send_message(f"𝕏 <b>[𝕏 Bot Cảnh Báo]</b> {msg}")
                         break
+
+                    # 2b. Giới hạn bình luận theo giờ (Anti-Ban X Rate Limiter)
+                    hourly_limit = int(get_setting("x_hourly_limit", "15"))
+                    if hourly_limit > 0:
+                        past_hour = self.count_past_hour_comments()
+                        if past_hour >= hourly_limit:
+                            msg = f"🛡️ Đã gửi {past_hour}/{hourly_limit} cmt trong 60 phút qua (Trần an toàn Anti-Ban 𝕏). Tạm nghỉ 10 phút để tránh bị Twitter gắn cờ..."
+                            self.notify_ui("x_status", msg)
+                            for remaining in range(600, 0, -1):
+                                if not self.is_running:
+                                    break
+                                mins = remaining // 60
+                                secs = remaining % 60
+                                self.notify_ui("x_countdown", f"🛡️ Giãn cách giờ an toàn: {mins}:{secs:02d}")
+                                time.sleep(1)
+                            self.notify_ui("x_countdown", "")
+                            continue
 
                     # 3. Khung giờ an toàn
                     if not self.check_active_time():
@@ -169,6 +209,20 @@ class XWorker:
                         if not comment_text or not comment_text.strip():
                             comment_text = AIEngine.get_fallback_comment()
 
+                        # Vũ khí Anti-ban: Chống trùng lặp nội dung liên tiếp
+                        if get_setting("x_anti_duplicate_enabled", "1") == "1":
+                            recent_texts = [l.get("comment_content", "").strip() for l in get_recent_x_logs(limit=10) if l.get("status") == "Đã gửi"]
+                            if comment_text.strip() in recent_texts:
+                                variations = [
+                                    " ghé trải nghiệm cùng nha",
+                                    " tối cày ngay cho nóng nè",
+                                    " ghé xem ủng hộ nha ae",
+                                    " đỉnh nóc kịch trần luôn",
+                                    " lưu lại tối luyện thôi nè",
+                                    " siêu phẩm luôn á"
+                                ]
+                                comment_text = comment_text.rstrip(" .!~") + random.choice(variations)
+
                         # Thực hiện bình luận trên X
                         self.notify_ui("x_status", f"Đang gửi bình luận '{comment_text[:28]}...' vào 𝕏: {post_url[:30]}...")
                         success, msg = self.engine.comment_on_tweet(post_url, comment_text)
@@ -210,6 +264,16 @@ class XWorker:
                             self.notify_ui("x_status", "Hết thời gian chờ an toàn. Đang quét tiếp...")
 
                         else:
+                            # TỰ ĐỘNG DỪNG KHẨN CẤP NẾU PHÁT HIỆN CHECKPOINT / BỊ KHÓA
+                            if "CHECKPOINT_DETECTED" in msg or "checkpoint" in msg.lower() or "tạm ngưng" in msg.lower() or "bị khóa" in msg.lower():
+                                emergency_msg = f"🚨 [ANTI-BAN X KHẨN CẤP] Phát hiện tài khoản X gặp Checkpoint / Xác minh danh tính! ({msg}). Bot đã TỰ ĐỘNG DỪNG ngay lập tức để bảo vệ tài khoản của bạn."
+                                self.notify_ui("x_status", emergency_msg)
+                                log_x_comment(post_url, post_content, comment_text, status="Checkpoint Khẩn Cấp", error=msg)
+                                if get_setting("telegram_alerts_enabled", "1") == "1" or get_setting("x_telegram_alerts_enabled", "1") == "1":
+                                    TelegramNotifier.send_message(f"🛑 <b>[𝕏 BẢO VỆ TÀI KHOẢN KHẨN CẤP]</b>\n{emergency_msg}\n👉 Hãy mở giao diện web và bấm <b>Đăng nhập 𝕏</b> để xác minh thủ công!")
+                                self.stop()
+                                return
+
                             consecutive_errors += 1
                             log_x_comment(post_url, post_content, comment_text, status="Lỗi", error=msg)
                             self.notify_ui("x_status", f"Lỗi cmt 𝕏: {msg}")

@@ -175,12 +175,110 @@ class XEngine:
         else:
             self.page = self.context.new_page()
 
-        # Stealth evasion
+        # Stealth evasion toàn diện chống bot detection của Twitter / Cloudflare / Arkose
         self.page.add_init_script("""
+            // 1. Ẩn navigator.webdriver
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-            window.chrome = { runtime: {} };
+
+            // 2. Mock languages & plugins chuẩn Chrome Windows
+            Object.defineProperty(navigator, 'languages', { get: () => ['vi-VN', 'vi', 'en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [
+                    { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+                    { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' },
+                    { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' }
+                ]
+            });
+
+            // 3. Mock chrome runtime object
+            window.chrome = {
+                app: { isInstalled: false },
+                webstore: { onInstallStageChanged: {}, onDownloadProgress: {} },
+                runtime: { PlatformOs: { MAC: 'mac', WIN: 'win', ANDROID: 'android', CROS: 'cros', LINUX: 'linux', OPENBSD: 'openbsd' } }
+            };
+
+            // 4. Mock notification permission query
+            const originalQuery = window.navigator.permissions && window.navigator.permissions.query;
+            if (originalQuery) {
+                window.navigator.permissions.query = (parameters) => (
+                    parameters.name === 'notifications' ?
+                        Promise.resolve({ state: Notification.permission }) :
+                        originalQuery(parameters)
+                );
+            }
         """)
         return self.page
+
+    def detect_checkpoint(self):
+        """
+        Phát hiện sớm 100% các dấu hiệu Checkpoint / Khóa tài khoản / Yêu cầu xác minh trên 𝕏.
+        Giúp hệ thống ngắt tự động NGAY LẬP TỨC để cứu tài khoản, tránh bị ban vĩnh viễn.
+        """
+        if not self.page:
+            return False, ""
+        try:
+            cur_url = self.page.url.lower()
+            checkpoint_urls = [
+                "/account/access",
+                "/account/suspended",
+                "/account/locked",
+                "/i/flow/consent_flow",
+                "/account/login_challenge"
+            ]
+            for u in checkpoint_urls:
+                if u in cur_url:
+                    return True, f"Phát hiện URL Checkpoint: {u}"
+
+            body_text = self.page.inner_text("body").lower()
+            checkpoint_signals = [
+                "tài khoản của bạn đã bị khóa",
+                "your account has been locked",
+                "xác nhận bạn là con người",
+                "authenticate your account",
+                "hoạt động bất thường",
+                "unusual activity",
+                "xác nhận số điện thoại",
+                "verify your phone",
+                "tài khoản đã bị tạm ngưng",
+                "account suspended",
+                "bạn tạm thời bị hạn chế thực hiện hành động này",
+                "temporarily restricted"
+            ]
+            for sig in checkpoint_signals:
+                if sig in body_text:
+                    return True, f"Phát hiện thông báo Checkpoint: '{sig}'"
+
+            return False, ""
+        except Exception:
+            return False, ""
+
+    def run_warmup(self, duration_sec=30):
+        """
+        Mô phỏng người thật lướt xem Bảng tin Trang chủ 𝕏 (Pre-Action Warm-Up).
+        Tạo tương tác telemetry tự nhiên giúp tài khoản đạt điểm uy tín cao, chống bị đánh dấu bot.
+        """
+        self.start()
+        print(f"[X] Bắt đầu phiên làm ấm tài khoản ({duration_sec}s)...")
+        try:
+            self.page.goto(f"{BASE_URL}/home", wait_until="domcontentloaded", timeout=20000)
+            time.sleep(3)
+
+            start = time.time()
+            while time.time() - start < duration_sec:
+                scroll_y = random.randint(400, 750)
+                self.page.mouse.wheel(0, scroll_y)
+                time.sleep(random.uniform(2.5, 4.5))
+
+                # 25% cơ hội cuộn ngược lại như đang đọc tweet
+                if random.random() < 0.25:
+                    self.page.mouse.wheel(0, -random.randint(150, 300))
+                    time.sleep(random.uniform(1.5, 3.0))
+
+            print("[X] Làm ấm tài khoản hoàn tất! Phiên duyệt web tự nhiên đã sẵn sàng.")
+            return True
+        except Exception as e:
+            print(f"[X] Lỗi làm ấm: {str(e)}")
+            return False
 
     def close(self):
         """Đóng an toàn trình duyệt X"""
@@ -512,6 +610,25 @@ class XEngine:
             if is_blocked_post(url=current_url, content=page_text[:600]):
                 print(f"[X] Phát hiện trang thuộc danh sách né cmt: {current_url}")
                 return False, "Trang thuộc danh sách chặn né bình luận (chợ phim, tô phim, sofaflix, mâm phim, vườn phim...)"
+
+            # VŨ KHÍ ANTI-BAN 1: Tự động phát hiện Checkpoint/Khóa tài khoản 𝕏 và ngắt khẩn cấp
+            if get_setting("x_checkpoint_protection", "1") == "1":
+                is_cp, cp_reason = self.detect_checkpoint()
+                if is_cp:
+                    print(f"[X CẢNH BÁO KHẨN CẤP] {cp_reason}")
+                    return False, f"CHECKPOINT_DETECTED: {cp_reason}"
+
+            # VŨ KHÍ ANTI-BAN 2: Mô phỏng hành vi người thật dừng đọc bài (Human Dwell Time)
+            if get_setting("x_human_dwell_enabled", "1") == "1":
+                dwell_sec = random.uniform(2.5, 4.5)
+                time.sleep(dwell_sec)
+                try:
+                    self.page.mouse.wheel(0, random.randint(150, 250))
+                    time.sleep(0.8)
+                    self.page.mouse.wheel(0, -random.randint(80, 150))
+                    time.sleep(0.4)
+                except Exception:
+                    pass
 
             # 1. Tự động thả Tim (Like) Tweet trước khi bình luận (nếu bật)
             if get_setting("auto_like_enabled", "1") == "1":
