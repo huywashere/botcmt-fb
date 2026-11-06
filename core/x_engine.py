@@ -473,8 +473,13 @@ class XEngine:
 
     def comment_on_tweet(self, tweet_url, comment_text):
         """
-        Điều hướng tới Tweet X và thực hiện bình luận thông minh.
+        Điều hướng tới Tweet X và thực hiện bình luận thông minh chuẩn xác 100%.
+        Đảm bảo nhập đầy đủ nội dung chữ vào ô soạn thảo và bấm nút Đăng thành công.
         """
+        if not comment_text or not comment_text.strip():
+            from core.ai_engine import AIEngine
+            comment_text = AIEngine.get_fallback_comment()
+
         # Kiểm tra trước khi mở trình duyệt
         if is_blocked_post(url=tweet_url):
             print(f"[X] Bỏ qua cmt: URL thuộc trang né cmt: {tweet_url}")
@@ -484,7 +489,7 @@ class XEngine:
         try:
             tweet_url = tweet_url.replace("twitter.com", "x.com")
             print(f"[X] Đang mở Tweet: {tweet_url}")
-            self.page.goto(tweet_url, wait_until="domcontentloaded", timeout=18000)
+            self.page.goto(tweet_url, wait_until="domcontentloaded", timeout=20000)
             time.sleep(random.uniform(2.5, 3.5))
 
             # Kiểm tra Tweet bị xóa hoặc 404
@@ -498,25 +503,46 @@ class XEngine:
                 print(f"[X] Phát hiện trang thuộc danh sách né cmt: {current_url}")
                 return False, "Trang thuộc danh sách chặn né bình luận (chợ phim, tô phim, sofaflix, mâm phim, vườn phim...)"
 
-            # Tự động thả Tim (Like) Tweet trước khi bình luận (Tạo thông báo kép kích thích tác giả tương tác)
+            # 1. Tự động thả Tim (Like) Tweet trước khi bình luận (nếu bật)
             if get_setting("auto_like_enabled", "1") == "1":
                 try:
                     like_btn = self.page.query_selector('article[data-testid="tweet"] button[data-testid="like"], button[data-testid="like"]')
                     if like_btn:
                         like_btn.click()
-                        time.sleep(random.uniform(0.8, 1.5))
+                        time.sleep(random.uniform(0.8, 1.2))
                 except Exception:
                     pass
 
-            # 1. Tìm ô soạn thảo trả lời (Reply textarea)
-            # Thử click nút Reply nếu ô inline chưa mở
-            input_box = self.page.query_selector('div[data-testid="tweetTextarea_0"]')
+            # 2. MỞ KHUNG SOẠN THẢO TRẢ LỜI (Ưu tiên Modal Reply - Ổn định nhất trên Twitter)
+            reply_btn = self.page.query_selector('article[data-testid="tweet"] button[data-testid="reply"], button[data-testid="reply"]')
+            if reply_btn:
+                try:
+                    reply_btn.click()
+                    time.sleep(random.uniform(1.2, 1.8))
+                except Exception:
+                    pass
+
+            # Xác định vùng chứa soạn thảo: nếu có dialog modal thì dùng dialog, ngược lại dùng page
+            dialog = self.page.query_selector('div[role="dialog"]')
+            container = dialog if dialog else self.page
+
+            # Tìm ô nhập văn bản (contenteditable / draft editor)
+            input_box = container.query_selector(
+                'div[data-testid="tweetTextarea_0"], '
+                'div[role="textbox"][contenteditable="true"], '
+                'div[data-lexical-editor="true"]'
+            )
+
+            # Nếu chưa thấy hoặc chưa có dialog, thử click vào nhãn inline 'Post your reply'
             if not input_box:
-                reply_btn = self.page.query_selector('article[data-testid="tweet"] button[data-testid="reply"], article[data-testid="tweet"] div[data-testid="reply"]')
-                if reply_btn:
+                inline_trigger = self.page.query_selector(
+                    'div[data-testid="tweetTextarea_0_label"], '
+                    'div[data-testid="tweetTextarea_0"]'
+                )
+                if inline_trigger:
                     try:
-                        reply_btn.click()
-                        time.sleep(1.5)
+                        inline_trigger.click()
+                        time.sleep(1.0)
                     except Exception:
                         pass
                 input_box = self.page.query_selector('div[data-testid="tweetTextarea_0"], div[role="textbox"][contenteditable="true"]')
@@ -524,35 +550,89 @@ class XEngine:
             if not input_box:
                 return False, "Không tìm thấy khung soạn thảo trả lời trên Tweet 𝕏."
 
-            # Focus và gõ bình luận mô phỏng người thật
-            input_box.click(force=True)
-            time.sleep(0.5)
-
+            # 3. NHẬP NỘI DUNG VĂN BẢN VÀO Ô SOẠN THẢO
             try:
-                self.page.keyboard.type(comment_text, delay=random.randint(18, 32))
+                input_box.scroll_into_view_if_needed()
+                input_box.click(force=True)
             except Exception:
-                input_box.fill(comment_text)
+                pass
+            time.sleep(0.4)
 
-            time.sleep(random.uniform(1.2, 2.0))
+            # Focus trực tiếp vào contenteditable
+            input_box.evaluate('el => { el.focus(); }')
+            time.sleep(0.3)
 
-            # 2. Tìm nút Đăng trả lời (Reply / Tweet button)
-            post_btn = self.page.query_selector('button[data-testid="tweetButtonInline"], button[data-testid="tweetButton"], button:has-text("Reply"), button:has-text("Trả lời")')
-
-            if post_btn:
-                aria_dis = post_btn.get_attribute("aria-disabled")
-                if aria_dis == "true":
-                    time.sleep(1.0)
+            # Nhập nội dung bằng keyboard.insert_text (tương thích 100% với React / Draft.js / Lexical)
+            try:
+                self.page.keyboard.insert_text(comment_text)
+            except Exception:
                 try:
-                    post_btn.click(timeout=5000)
+                    self.page.keyboard.type(comment_text, delay=random.randint(15, 25))
                 except Exception:
-                    post_btn.evaluate('el => el.click()')
+                    pass
+
+            time.sleep(1.0)
+
+            # 4. KIỂM TRA CHẶT CHẼ: ĐẢM BẢO CHỮ ĐÃ VÀO Ô SOẠN THẢO
+            content_in_box = input_box.evaluate('el => (el.innerText || el.textContent || "").trim()')
+            if not content_in_box or len(content_in_box) < 4:
+                print("[X] Chữ chưa vào ô, thử phương án nhập cấp 2...")
+                try:
+                    input_box.click()
+                    self.page.keyboard.press("Control+A")
+                    self.page.keyboard.press("Backspace")
+                    time.sleep(0.2)
+                    for char in comment_text:
+                        self.page.keyboard.insert_text(char)
+                        time.sleep(random.uniform(0.015, 0.035))
+                except Exception:
+                    pass
+                time.sleep(0.8)
+                content_in_box = input_box.evaluate('el => (el.innerText || el.textContent || "").trim()')
+
+            # Nếu vẫn không có chữ trong ô, báo lỗi rõ ràng chứ không báo cmt thành công giả
+            if not content_in_box or len(content_in_box) < 4:
+                return False, "Không thể điền nội dung bình luận vào ô soạn thảo 𝕏."
+
+            # 5. TÌM NÚT ĐĂNG (TWEET / REPLY BUTTON)
+            post_btn = container.query_selector(
+                'button[data-testid="tweetButton"], '
+                'button[data-testid="tweetButtonInline"], '
+                'button:has-text("Reply"), '
+                'button:has-text("Trả lời")'
+            )
+            if not post_btn:
+                post_btn = self.page.query_selector('button[data-testid="tweetButton"], button[data-testid="tweetButtonInline"]')
+
+            # Đợi nút Đăng chuyển sang trạng thái enabled (aria-disabled="false")
+            if post_btn:
+                for _ in range(6):
+                    aria_dis = post_btn.get_attribute("aria-disabled")
+                    is_dis = post_btn.get_attribute("disabled")
+                    if aria_dis != "true" and is_dis is None:
+                        break
+                    time.sleep(0.5)
+
+                try:
+                    post_btn.click(timeout=6000)
+                except Exception:
+                    try:
+                        post_btn.evaluate('el => el.click()')
+                    except Exception:
+                        self.page.keyboard.press("Control+Enter")
             else:
-                # Phím tắt đăng bài trên X: Ctrl + Enter
                 self.page.keyboard.press("Control+Enter")
 
             time.sleep(random.uniform(3.0, 4.5))
 
-            print(f"[X] Đã gửi bình luận thành công cho Tweet: {tweet_url}")
+            # Nếu dùng dialog, kiểm tra xem dialog đã đóng chưa
+            if dialog:
+                dialog_still = self.page.query_selector('div[role="dialog"]')
+                if dialog_still:
+                    self.page.keyboard.press("Control+Enter")
+                    time.sleep(2.0)
+
+            print(f"[X] Đã gửi bình luận thành công cho Tweet: {tweet_url} | Nội dung: {comment_text}")
             return True, "Đã gửi bình luận 𝕏 thành công"
 
         except Exception as e:

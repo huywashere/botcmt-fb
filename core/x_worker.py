@@ -166,9 +166,11 @@ class XWorker:
                             platform="𝕏 (Twitter)",
                             is_general_post=is_general
                         )
+                        if not comment_text or not comment_text.strip():
+                            comment_text = AIEngine.get_fallback_comment()
 
                         # Thực hiện bình luận trên X
-                        self.notify_ui("x_status", f"Đang gửi bình luận vào 𝕏: {post_url[:35]}...")
+                        self.notify_ui("x_status", f"Đang gửi bình luận '{comment_text[:28]}...' vào 𝕏: {post_url[:30]}...")
                         success, msg = self.engine.comment_on_tweet(post_url, comment_text)
 
                         if success:
