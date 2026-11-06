@@ -173,9 +173,22 @@ class XWorker:
                             time.sleep(1)
                         continue
 
-                    # 4. Cào bài thảo luận phim ảnh trên X
-                    self.notify_ui("x_status", "Đang cào các chủ đề thảo luận phim mới trên 𝕏...")
-                    posts = self.engine.scan_movie_tweets(max_posts=6)
+                    # 4. Cào bài thảo luận trên X
+                    self.notify_ui("x_status", "Đang cào các chủ đề thảo luận hot trên 𝕏...")
+                    try:
+                        posts = self.engine.scan_movie_tweets(max_posts=6)
+                    except Exception as e:
+                        err_scan = str(e)
+                        if "CHECKPOINT_DETECTED" in err_scan or "xác minh" in err_scan.lower() or "checkpoint" in err_scan.lower() or "access" in err_scan.lower():
+                            emergency_msg = "🚨 [CẢNH BÁO 𝕏] Twitter đang yêu cầu xác minh bảo mật (Cloudflare / Checkpoint)! Bot đã TỰ ĐỘNG DỪNG an toàn. Vui lòng bấm nút 'Đăng nhập 𝕏' trên giao diện để mở trình duyệt tích xác minh 1 lần."
+                            self.notify_ui("x_status", emergency_msg)
+                            if get_setting("telegram_alerts_enabled", "1") == "1" or get_setting("x_telegram_alerts_enabled", "1") == "1":
+                                TelegramNotifier.send_message(f"🛑 <b>[𝕏 XÁC MINH BẢO MẬT]</b>\n{emergency_msg}\n👉 Vui lòng mở app bấm nút <b>Đăng nhập 𝕏</b> để tích xác minh trong trình duyệt.")
+                            self.stop()
+                            return
+                        else:
+                            self.notify_ui("x_status", f"Lỗi cào 𝕏: {err_scan}")
+                            posts = []
                     commented_this_round = 0
 
                     for p in posts:

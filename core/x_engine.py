@@ -242,7 +242,11 @@ class XEngine:
                 "tài khoản đã bị tạm ngưng",
                 "account suspended",
                 "bạn tạm thời bị hạn chế thực hiện hành động này",
-                "temporarily restricted"
+                "temporarily restricted",
+                "thực hiện xác minh bảo mật",
+                "xác minh bạn không phải là bot",
+                "chờ một chút",
+                "verify you are human"
             ]
             for sig in checkpoint_signals:
                 if sig in body_text:
@@ -314,13 +318,13 @@ class XEngine:
                 f"--user-data-dir={X_DATA_DIR}",
                 "--no-first-run",
                 "--no-default-browser-check",
-                f"{BASE_URL}/login"
+                f"{BASE_URL}/home"
             ])
             return True
         else:
             self.headless = False
             self.start()
-            self.page.goto(f"{BASE_URL}/login", timeout=60000)
+            self.page.goto(f"{BASE_URL}/home", timeout=60000)
             return True
 
     def check_is_logged_in(self):
@@ -393,6 +397,13 @@ class XEngine:
             try:
                 self.page.goto(search_url, wait_until="domcontentloaded", timeout=18000)
                 time.sleep(random.uniform(2.5, 3.5))
+
+                # Kiểm tra Checkpoint / Cloudflare xác minh
+                if get_setting("x_checkpoint_protection", "1") == "1":
+                    is_cp, cp_reason = self.detect_checkpoint()
+                    if is_cp:
+                        print(f"[X CẢNH BÁO KHẨN CẤP] {cp_reason}")
+                        raise Exception(f"CHECKPOINT_DETECTED: {cp_reason}")
 
                 # Lướt nhẹ 2 lần để tải thêm tweet mới
                 for _ in range(2):
@@ -494,6 +505,12 @@ class XEngine:
             try:
                 self.page.goto(f"{BASE_URL}/home", wait_until="domcontentloaded", timeout=18000)
                 time.sleep(random.uniform(2.5, 3.5))
+
+                if get_setting("x_checkpoint_protection", "1") == "1":
+                    is_cp, cp_reason = self.detect_checkpoint()
+                    if is_cp:
+                        print(f"[X CẢNH BÁO KHẨN CẤP] {cp_reason}")
+                        raise Exception(f"CHECKPOINT_DETECTED: {cp_reason}")
 
                 for _ in range(3):
                     self.page.mouse.wheel(0, random.randint(500, 900))
