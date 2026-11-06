@@ -48,6 +48,71 @@ def is_vietnamese_text(text):
     matches = words.intersection(COMMON_VN_WORDS)
     return len(matches) >= 2
 
+# Bộ từ khóa mở rộng toàn diện bao quát mọi khía cạnh liên quan tới phim ảnh (kể cả liên quan nhẹ)
+MOVIE_RELATED_KEYWORDS = [
+    # Cốt lõi về phim & rạp chiếu
+    "phim", "movie", "film", "cinema", "rạp", "rạp chiếu", "chiếu rạp", "suất chiếu", 
+    "vé xem phim", "bỏng ngô", "bắp nước", "màn ảnh", "màn bạc", "điện ảnh",
+    
+    # Định dạng, bộ & series
+    "bộ này", "bộ phim", "phim bộ", "phim lẻ", "phim ngắn", "trọn bộ", "full tập", "bản cam", 
+    "bản đẹp", "full hd", "vietsub", "thuyết minh", "lồng tiếng",
+    
+    # Nhân vật, diễn xuất, đánh giá
+    "diễn viên", "nam chính", "nữ chính", "nam phụ", "nữ phụ", "vai diễn", "đạo diễn", 
+    "cast", "acting", "oscar", "cannes", "hollywood", "cảnh quay", "phân cảnh", 
+    "kịch bản", "cốt truyện", "twist", "plot", "ending", "cái kết", "spoil", "spoil phim",
+    "trailer", "teaser", "after credit", "review phim", "review",
+    
+    # Hành vi xem phim & hỏi phim
+    "cày phim", "mọt phim", "mê phim", "xem phim", "coi phim", "xem xong", "coi xong", 
+    "tìm phim", "xin tên phim", "tên phim", "phim gì", "phim hay", "phim dở", "gợi ý phim",
+    
+    # Nền tảng xem phim & 18+
+    "netflix", "vieon", "fpt play", "iqiyi", "wetv", "disney", "hbo", "galaxy play", 
+    "web phim", "phimmoi", "cảnh nóng", "18+", "phim 18+", "nội dung người lớn",
+    
+    # Thể loại phim
+    "kdrama", "k-drama", "cdrama", "c-drama", "anime", "manga", "hoạt hình", "live action", 
+    "bom tấn", "siêu phẩm", "kinh dị", "hài hước", "hành động", "tình cảm", "khoa học viễn tưởng", 
+    "trinh thám", "cổ trang", "học đường", "viễn tưởng", "tâm lý", "giật gân", "chiếu mạng",
+    
+    # Các franchise / vũ trụ phim nổi tiếng
+    "marvel", "mcu", "dc", "batman", "superman", "avengers", "spider-man", "spiderman", 
+    "harry potter", "avatar", "fast & furious", "john wick", "oppenheimer", "barbie", 
+    "squid game", "conan", "one piece", "doraemon", "naruto", "dune", "stranger things"
+]
+
+def is_movie_related(text, custom_keywords=None):
+    """
+    Xác thực bài viết BẮT BUỘC phải chung chủ đề hoặc liên quan tới phim ảnh (dù liên quan nhẹ).
+    Đảm bảo 100% bài cmt phải liên quan tới phim (diễn viên, tập mới, netflix, rạp chiếu, review, cảnh nóng...).
+    Loại bỏ triệt để các bài viết lạc đề (tâm sự cá nhân, đời sống, ăn uống, crypto, bán hàng, tuyển dụng...).
+    """
+    if not text or len(text.strip()) < 5:
+        return False
+    text_clean = text.lower()
+
+    # 1. Kiểm tra từ khóa tùy chỉnh từ settings nếu có
+    if custom_keywords:
+        for kw in custom_keywords:
+            k = kw.strip().lower()
+            if k and k in text_clean:
+                return True
+
+    # 2. Kiểm tra bộ từ khóa mở rộng về phim ảnh
+    for term in MOVIE_RELATED_KEYWORDS:
+        if term in text_clean:
+            return True
+
+    # 3. Kiểm tra các mẫu regex đặc trưng: tập 1..99, ss1..9, ep 1..99, season 1..9
+    if re.search(r'\b(?:tập\s+\d+|tập\s+(?:mới|cuối|này|sau|tiếp|full)|hóng\s+tập|phim\s+bộ|trọn\s+bộ)\b', text_clean):
+        return True
+    if re.search(r'\b(?:season\s*\d+|ss\d+|ep\s*\d+|episode\s*\d+)\b', text_clean):
+        return True
+
+    return False
+
 DEFAULT_BLOCKED_AUTHORS = [
     "chợ phim", "chophim", "cho phim",
     "tô phim", "tophim", "to phim",

@@ -6,7 +6,7 @@ from core.db import (
     get_setting, set_setting, log_threads_comment,
     is_threads_post_already_commented, get_recent_threads_logs
 )
-from core.ai_engine import AIEngine
+from core.ai_engine import AIEngine, is_movie_related
 from core.threads_engine import ThreadsEngine
 from core.telegram_notifier import TelegramNotifier
 
@@ -146,6 +146,10 @@ class ThreadsWorker:
                         post_content = p["content"]
 
                         if is_threads_post_already_commented(post_url):
+                            continue
+
+                        # Đảm bảo bài viết bắt buộc phải liên quan đến phim ảnh (dù nhẹ)
+                        if not is_movie_related(post_content):
                             continue
 
                         is_general = p.get("is_general_post", False)

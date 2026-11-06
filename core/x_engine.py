@@ -5,7 +5,7 @@ import random
 import urllib.parse
 from playwright.sync_api import sync_playwright
 from core.db import get_setting, log_x_comment, is_x_post_already_commented
-from core.ai_engine import is_vietnamese_text, is_blocked_post
+from core.ai_engine import is_vietnamese_text, is_blocked_post, is_movie_related
 
 X_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "x_user_data")
 os.makedirs(X_DATA_DIR, exist_ok=True)
@@ -360,6 +360,10 @@ class XEngine:
                     if not is_vietnamese_text(snippet_clean):
                         continue
 
+                    # BẮT BUỘC: Tweet phải chung chủ đề hoặc liên quan tới phim ảnh (dù liên quan nhẹ)
+                    if not is_movie_related(snippet_clean, keywords):
+                        continue
+
                     # Lọc từ khóa cấm / blacklist
                     snippet_lower = snippet_clean.lower()
                     if any(bad in snippet_lower for bad in blacklist):
@@ -446,6 +450,10 @@ class XEngine:
 
                     # Lọc nghiêm ngặt: Chỉ lấy bài viết tiếng Việt của người Việt Nam
                     if not is_vietnamese_text(snippet_clean):
+                        continue
+
+                    # BẮT BUỘC: Tweet phải chung chủ đề hoặc liên quan tới phim ảnh (dù liên quan nhẹ)
+                    if not is_movie_related(snippet_clean, keywords):
                         continue
 
                     if any(bad in snippet_clean.lower() for bad in blacklist):

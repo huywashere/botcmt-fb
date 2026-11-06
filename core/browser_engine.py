@@ -5,7 +5,7 @@ import random
 import asyncio
 from playwright.sync_api import sync_playwright
 from core.db import get_setting, log_comment, is_post_already_commented
-from core.ai_engine import is_vietnamese_text, is_blocked_post
+from core.ai_engine import is_vietnamese_text, is_blocked_post, is_movie_related
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "user_data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -338,6 +338,10 @@ class BrowserEngine:
 
                     # Lọc nghiêm ngặt: Chỉ cmt bài viết tiếng Việt của người Việt Nam
                     if not is_vietnamese_text(item.get("content", "")):
+                        continue
+
+                    # BẮT BUỘC: Bài viết phải chung chủ đề hoặc liên quan tới phim ảnh (dù nhẹ)
+                    if not is_movie_related(item.get("content", "")):
                         continue
 
                     # Né các trang/kênh đối thủ bị chặn (chợ phim, tô phim, sofaflix...)
@@ -724,6 +728,16 @@ class BrowserEngine:
 
                 if not post_url:
                     post_url = f"{group_url}#post_{abs(hash(clean_text[:60]))}"
+
+                if not is_vietnamese_text(clean_text):
+                    continue
+
+                # BẮT BUỘC: Bài viết Group phải liên quan tới phim ảnh (dù nhẹ)
+                if not is_movie_related(clean_text):
+                    continue
+
+                if is_blocked_post(url=post_url, content=clean_text):
+                    continue
 
                 if not is_post_already_commented(post_url):
                     posts.append({

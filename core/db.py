@@ -115,7 +115,7 @@ def init_db():
         "topic": "Phim ảnh, review phim, phim bộ Hàn/Trung/Âu Mỹ, chia sẻ cảm nhận điện ảnh, gợi ý phim hay",
         "persona": "Bạn trẻ Gen Z mê phim, cmt siêu ngắn gọn (8-15 từ), xưng tui bạn bè thân mật, dùng từ lóng giới trẻ (cuốn xỉu, nét căng, mượt đét, bao dính), rủ ghé web tui flexphim xem phim",
         "brand_mention": "web tui flexphim",
-        "keywords": "phim, tập, diễn viên, mọt phim, xem ở đâu, review, netflix, bộ này, tên phim, chiếu rạp, sub, vietsub, thuyết minh, web phim",
+        "keywords": "phim, phim 18+, review phim, web phim, netflix, phim rạp, cày phim, mọt phim, phim bộ, phim người lớn, cảnh nóng, spoil phim, chiếu rạp, kdrama, anime, tập mới, diễn viên",
         "spintax_samples": "{phim cuốn xỉu|mê bộ này ghê|cảnh này bao dính}, {ghé|qua} web tui flexphim xem phim {với tui nè|nha bạn ơi}!\n{tối rảnh|hôm nào rảnh} {ghé|qua|vô} web tui flexphim xem phim {xả stress|thư giãn} nha bạn ơi!\nbộ này {bên|trên} web tui flexphim có bản {nét căng|full hd} luôn á, {qua|ghé} cày thử nè!\ncoi trên web tui flexphim {mượt đét|bao mượt} luôn á bạn ơi, {ghé|qua} xem thử nè!\n{cuốn thực sự|đỉnh chóp luôn}, tối {qua|ghé} web tui flexphim cày trọn bộ {với tui nè|nha}!\nlên web tui flexphim xem phim {mượt mà không lo lag|bao phê} nè bạn ơi!",
         "auto_comment_enabled": "0",
         "daily_limit": "25",         # Giới hạn an toàn chống ban tuyệt đối: tối đa 25 cmt/ngày

@@ -8,7 +8,7 @@ from core.db import (
     get_pending_target_urls, mark_post_status,
     get_selected_fanpage
 )
-from core.ai_engine import AIEngine
+from core.ai_engine import AIEngine, is_movie_related
 from core.browser_engine import BrowserEngine
 from core.telegram_notifier import TelegramNotifier
 
@@ -193,25 +193,17 @@ class BotWorker:
                             continue
                     valid_posts.append(p)
 
-                # 1. Ưu tiên bài liên quan đến phim ảnh; nếu không có thì chuyển qua bài viết thường văn bản
+                # 1. BẮT BUỘC bài viết phải chung chủ đề hoặc liên quan tới phim ảnh (dù liên quan nhẹ)
                 movie_posts = []
-                regular_posts = []
                 for p in valid_posts:
-                    c_lower = p.get("content", "").lower()
-                    if keywords and any(kw in c_lower for kw in keywords):
+                    if is_movie_related(p.get("content", ""), keywords):
                         movie_posts.append(p)
-                    else:
-                        regular_posts.append(p)
 
-                posts_to_process = []
+                posts_to_process = movie_posts
                 if movie_posts:
-                    self.notify_ui("status", f"Tìm thấy {len(movie_posts)} bài viết về phim ảnh. Đang tiến hành bình luận...")
-                    posts_to_process = movie_posts
-                elif get_setting("fallback_to_general_posts", "1") == "1" and regular_posts:
-                    self.notify_ui("status", f"Không có bài phim mới. Tự động chuyển qua {len(regular_posts)} bài viết thường văn bản để bình luận đơn giản...")
-                    posts_to_process = regular_posts
+                    self.notify_ui("status", f"Tìm thấy {len(movie_posts)} bài viết liên quan phim ảnh. Đang tiến hành bình luận...")
                 else:
-                    self.notify_ui("status", "Lượt quét vừa rồi không có bài phim nào. Lần quét tiếp sau ít phút...")
+                    self.notify_ui("status", "Lượt quét vừa rồi không có bài nào liên quan phim ảnh. Lần quét tiếp sau ít phút...")
                     posts_to_process = []
 
                 for p in posts_to_process:
