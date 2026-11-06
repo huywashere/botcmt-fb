@@ -177,42 +177,67 @@ class BotWorker:
                 max_age_hours = int(get_setting("max_post_age_hours", "24"))
                 commented_this_round = 0
 
+                # Lọc danh sách bài hợp lệ (chưa cmt, không dính blacklist, không quá cũ)
+                valid_posts = []
                 for p in posts:
+                    post_content = p.get("content", "")
+                    post_url = p.get("url", "")
+                    if not post_url or is_post_already_commented(post_url):
+                        continue
+                    if blacklist and any(bad in post_content.lower() for bad in blacklist):
+                        continue
+                    if max_age_hours > 0:
+                        first_snippet = post_content[:150].lower()
+                        is_old = any(sig in first_snippet for sig in ["2 ngày", "3 ngày", "4 ngày", "5 ngày", "6 ngày", "1 tuần", "2 tuần", "1 tháng"])
+                        if is_old:
+                            continue
+                    valid_posts.append(p)
+
+                # 1. Ưu tiên bài liên quan đến phim ảnh; nếu không có thì chuyển qua bài viết thường văn bản
+                movie_posts = []
+                regular_posts = []
+                for p in valid_posts:
+                    c_lower = p.get("content", "").lower()
+                    if keywords and any(kw in c_lower for kw in keywords):
+                        movie_posts.append(p)
+                    else:
+                        regular_posts.append(p)
+
+                posts_to_process = []
+                if movie_posts:
+                    self.notify_ui("status", f"Tìm thấy {len(movie_posts)} bài viết về phim ảnh. Đang tiến hành bình luận...")
+                    posts_to_process = movie_posts
+                elif get_setting("fallback_to_general_posts", "1") == "1" and regular_posts:
+                    self.notify_ui("status", f"Không có bài phim mới. Tự động chuyển qua {len(regular_posts)} bài viết thường văn bản để bình luận đơn giản...")
+                    posts_to_process = regular_posts
+                else:
+                    self.notify_ui("status", "Lượt quét vừa rồi không có bài phim nào. Lần quét tiếp sau ít phút...")
+                    posts_to_process = []
+
+                for p in posts_to_process:
                     if not self.is_running:
                         break
 
                     post_content = p["content"]
                     post_url = p["url"]
-
-                    # 1. Kiểm tra từ khóa loại trừ (Blacklist)
-                    if blacklist and any(bad in post_content.lower() for bad in blacklist):
-                        self.notify_ui("status", f"Bỏ qua bài do chứa từ khóa loại trừ: {post_url[:35]}...")
-                        continue
-
-                    # 2. Kiểm tra tuổi bài viết (Chỉ cmt bài dưới 24h)
-                    if max_age_hours > 0:
-                        first_snippet = post_content[:150].lower()
-                        is_old = any(sig in first_snippet for sig in ["2 ngày", "3 ngày", "4 ngày", "5 ngày", "6 ngày", "1 tuần", "2 tuần", "1 tháng"])
-                        if is_old:
-                            self.notify_ui("status", f"Bỏ qua bài viết cũ quá 24h: {post_url[:35]}...")
-                            continue
-
-                    # 3. Kiểm tra từ khóa trọng tâm
-                    if keywords:
-                        has_kw = any(kw in post_content.lower() for kw in keywords)
-                        if not has_kw:
-                            self.notify_ui("status", f"Bỏ qua bài không chứa từ khóa phim: '{post_content[:35]}...'")
-                            continue
-
-                    if is_post_already_commented(post_url):
-                        continue
+                    is_general = p not in movie_posts
 
                     # Xác định Fanpage đại diện đang active
                     current_fanpage_name = active_page or (fanpages[current_page_idx] if fanpages else "Flexphim")
 
-                    # Sinh bình luận thông minh bằng Gemini Vision / Text / Spintax
-                    self.notify_ui("status", f"AI đang phân tích ngữ cảnh & hình ảnh bài viết cho '{current_fanpage_name}'...")
-                    comment_text = AIEngine.generate_comment(post_content, current_fanpage_name, image_url=p.get("image_url", ""))
+                    # Sinh bình luận thông minh bằng Gemini
+                    if is_general:
+                        self.notify_ui("status", f"AI đang tạo bình luận tự nhiên cho bài viết thường: '{post_content[:35]}...'")
+                    else:
+                        self.notify_ui("status", f"AI đang phân tích ngữ cảnh phim & hình ảnh cho '{current_fanpage_name}'...")
+
+                    comment_text = AIEngine.generate_comment(
+                        post_content, 
+                        current_fanpage_name, 
+                        image_url=p.get("image_url", ""),
+                        platform="Facebook",
+                        is_general_post=is_general
+                    )
 
                     # Gửi thông tin về UI
                     self.notify_ui("current_processing", {

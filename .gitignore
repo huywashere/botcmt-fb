@@ -1,5 +1,8 @@
-# Facebook Session & Cookies (Rất quan trọng - tránh lộ tài khoản)
+# Facebook, Threads & X Session & Cookies (Rất quan trọng - tránh lộ tài khoản)
 user_data/
+threads_user_data/
+x_user_data/
+twitter_user_data/
 *.session
 *.cookie
 cookies.json

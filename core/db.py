@@ -70,6 +70,32 @@ def init_db():
     )
     """)
 
+    # Threads Comments history
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS threads_comment_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        post_url TEXT NOT NULL,
+        post_snippet TEXT,
+        comment_content TEXT NOT NULL,
+        status TEXT DEFAULT 'Đã gửi',  -- 'Đã gửi', 'Lỗi', 'Bỏ qua', 'Chưa gửi (Quét thử)'
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # X (Twitter) Comments history
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS x_comment_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        post_url TEXT NOT NULL,
+        post_snippet TEXT,
+        comment_content TEXT NOT NULL,
+        status TEXT DEFAULT 'Đã gửi',  -- 'Đã gửi', 'Lỗi', 'Bỏ qua', 'Chưa gửi (Quét thử)'
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Settings table (Key - Value)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS settings (
@@ -81,15 +107,16 @@ def init_db():
     # Pre-populate default settings (Tối ưu chuyên sâu cho chủ đề Phim ảnh & Anti-ban)
     default_settings = {
         "gemini_api_key": "",
-        "scan_interval": "5",       # 5 phút quét 1 lần
+        "scan_interval": "2",       # 2 phút quét 1 lần
         "feed_source": "for_you",    # for_you, groups, custom_urls
-        "min_delay": "150",          # Độ trễ tối thiểu an toàn (2.5 phút)
-        "max_delay": "360",          # Độ trễ tối đa an toàn (6 phút)
+        "min_delay": "110",          # Độ trễ tối thiểu an toàn (~2 phút)
+        "max_delay": "130",          # Độ trễ tối đa an toàn (~2 phút)
+        "fb_delay_preset": "2",      # Preset giãn cách cmt FB (1, 2, 3, 5 phút)
         "topic": "Phim ảnh, review phim, phim bộ Hàn/Trung/Âu Mỹ, chia sẻ cảm nhận điện ảnh, gợi ý phim hay",
-        "persona": "Một bạn trẻ mê phim chính hiệu (mọt phim), xưng tui/mình thân mật, chia sẻ chân thực, tự nhiên như người dùng mạng xã hội thực thụ (dùng các từ: nè, nha, coi cuốn, web mượt lắm... đại diện cho Flex Phim)",
-        "brand_mention": "Flex Phim => flexphim chấm top",
+        "persona": "Một bạn trẻ mê phim chính hiệu (mọt phim), xưng tui/mình thân mật, chia sẻ chân thực, tự nhiên như người dùng mạng xã hội thực thụ (dùng các từ: nè, nha, coi cuốn, mượt lắm...)",
+        "brand_mention": "flexphim",
         "keywords": "phim, tập, diễn viên, mọt phim, xem ở đâu, review, netflix, bộ này, tên phim, chiếu rạp, sub, vietsub, thuyết minh, web phim",
-        "spintax_samples": "qua Flex Phim thử đi nè, web bên tui làm á => flexphim chấm top\nghé bên tui chơi thử xem sao nha, Flex Phim nè => flexphim chấm top\nbên tui là Flex Phim nè, qua tìm thử phim bạn thích nha => flexphim chấm top\nthử đổi gió qua Flex Phim xem sao nè bạn ơi => flexphim chấm top\ncoi bên Flex Phim thử nha, nhà tui mới update á => flexphim chấm top\nbên tui có bản đẹp nè, qua xem thử nha => flexphim chấm top\nqua web bên tui ủng hộ nè, Flex Phim á => flexphim chấm top\nghé flexphim chấm top xem nha, mượt lắm á",
+        "spintax_samples": "{ghé|qua|vô} flexphim {xem|coi} thử đi nè, {bản đẹp|mượt} lắm á\n{tối|rảnh} {qua|ghé|lên} flexphim cày thử xem sao nha\nphim này {trên|bên} flexphim có {bản nét|vietsub} rồi á bạn\n{ghé|lên} flexphim tìm thử nha bạn ơi, {nhiều phim hay|cập nhật nhanh} lắm\n{thử đổi gió|tối về} qua flexphim {xả stress|thư giãn} đi nè\n{bên|trên} flexphim có cập nhật tập mới rồi á, {qua|ghé} coi thử nha\ncoi {trên|bên} flexphim thử nha, mượt mà không quảng cáo phiền nè\n{qua|ghé} flexphim ủng hộ tui nha, có đủ bản đẹp luôn",
         "auto_comment_enabled": "0",
         "daily_limit": "25",         # Giới hạn an toàn chống ban tuyệt đối: tối đa 25 cmt/ngày
         "active_start": "08:00",     # Chỉ chạy từ 8h sáng
@@ -99,7 +126,8 @@ def init_db():
         "telegram_bot_token": "",
         "telegram_chat_id": "",
         "telegram_alerts_enabled": "0",
-        "blacklist_keywords": "tuyển dụng, tuyển nv, bán hàng, giá rẻ, vay tiền, vay nhanh, scam, lừa đảo, cờ bạc, bóng đá, chính trị, 18+",
+        "blacklist_keywords": "tuyển dụng, tuyển nv, bán hàng, giá rẻ, vay tiền, vay nhanh, scam, lừa đảo, cờ bạc, bóng đá, chính trị, chợ phim, tô phim, sofaflix",
+        "blocked_authors": "chợ phim, to phim, tô phim, sofaflix, chophim, tophim, sofa flix",
         "max_post_age_hours": "24",  # Chỉ cmt bài đăng trong vòng 24h
         "comment_mode": "both",      # "post" (bình luận bài), "reply" (ưu tiên trả lời cmt người hỏi), "both"
         "fanpage_rotation_list": "Flex Phim",  # Danh sách tên các Fanpage cần xoay vòng (cách nhau bởi dấu phẩy)
@@ -109,7 +137,28 @@ def init_db():
         "link_cloaking_enabled": "1",    # Tự động lách link chống Facebook Ghostban
         "gemini_vision_enabled": "1",    # Gemini Multimodal Vision đọc ảnh poster bài viết
         "warmup_enabled": "1",           # Làm ấm session 45s trước khi cmt
-        "proxy_string": ""               # Cấu hình Proxy riêng (IP:Port:User:Pass)
+        "proxy_string": "",              # Cấu hình Proxy riêng (IP:Port:User:Pass)
+        # Cấu hình riêng cho Threads Auto Bot:
+        "threads_keywords": "phim, phim 18+, review phim, web phim, netflix, phim rạp, cày phim, mọt phim, phim bộ, phim người lớn, cảnh nóng, spoil phim, kdrama",
+        "threads_scan_interval": "2",
+        "threads_min_delay": "110",
+        "threads_max_delay": "130",
+        "threads_daily_limit": "50",
+        "threads_auto_comment_enabled": "0",
+        "threads_delay_preset": "2",     # Preset giãn cách cmt Threads (1, 2, 3, 5 phút)
+        # Tự động chuyển bài viết thường văn bản khi không có bài phim:
+        "fallback_to_general_posts": "1",
+        # Thông báo Telegram riêng cho Threads:
+        "threads_telegram_alerts_enabled": "1",
+        # Cấu hình riêng cho X (Twitter) Auto Bot:
+        "x_keywords": "phim, phim 18+, review phim, web phim, phim hay, netflix, phim rạp, cày phim, mọt phim, phim bộ, phim người lớn, cảnh nóng, spoil phim, trailer phim, chiếu rạp, kdrama, anime",
+        "x_scan_interval": "2",
+        "x_min_delay": "110",
+        "x_max_delay": "130",
+        "x_daily_limit": "100",
+        "x_auto_comment_enabled": "0",
+        "x_delay_preset": "2",           # Preset giãn cách cmt X (1, 2, 3, 5 phút)
+        "x_telegram_alerts_enabled": "1"
     }
 
     for k, v in default_settings.items():
@@ -189,6 +238,94 @@ def is_post_already_commented(post_url):
     row = cursor.fetchone()
     conn.close()
     return row is not None
+
+# ==================== THREADS DATABASE HELPERS ====================
+def log_threads_comment(post_url, post_snippet, comment_content, status="Đã gửi", error=""):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO threads_comment_logs (post_url, post_snippet, comment_content, status, error_message, created_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
+    """, (post_url, post_snippet, comment_content, status, error))
+    conn.commit()
+    conn.close()
+
+def get_recent_threads_logs(limit=50):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM threads_comment_logs ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def is_threads_post_already_commented(post_url):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM threads_comment_logs WHERE post_url = ? AND status = 'Đã gửi'", (post_url,))
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
+def export_threads_logs_to_csv(filepath=None):
+    """Xuất toàn bộ lịch sử bình luận Threads ra file CSV"""
+    if not filepath:
+        filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lich_su_comment_threads.csv")
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM threads_comment_logs ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    with open(filepath, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(["ID", "URL Bài Threads", "Nội Dung Bài Threads", "Nội Dung Bình Luận", "Trạng Thái", "Lỗi", "Thời Gian"])
+        for r in rows:
+            writer.writerow([r["id"], r["post_url"], r["post_snippet"], r["comment_content"], r["status"], r["error_message"], r["created_at"]])
+    return filepath
+
+# ==================== X (TWITTER) DATABASE HELPERS ====================
+def log_x_comment(post_url, post_snippet, comment_content, status="Đã gửi", error=""):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO x_comment_logs (post_url, post_snippet, comment_content, status, error_message, created_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
+    """, (post_url, post_snippet, comment_content, status, error))
+    conn.commit()
+    conn.close()
+
+def get_recent_x_logs(limit=50):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM x_comment_logs ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def is_x_post_already_commented(post_url):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM x_comment_logs WHERE post_url = ? AND status = 'Đã gửi'", (post_url,))
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
+def export_x_logs_to_csv(filepath=None):
+    """Xuất toàn bộ lịch sử bình luận X (Twitter) ra file CSV"""
+    if not filepath:
+        filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lich_su_comment_x.csv")
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM x_comment_logs ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    with open(filepath, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(["ID", "URL Tweet X", "Nội Dung Tweet", "Nội Dung Bình Luận", "Trạng Thái", "Lỗi", "Thời Gian"])
+        for r in rows:
+            writer.writerow([r["id"], r["post_url"], r["post_snippet"], r["comment_content"], r["status"], r["error_message"], r["created_at"]])
+    return filepath
 
 def get_accounts():
     conn = get_db()

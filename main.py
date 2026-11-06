@@ -19,11 +19,17 @@ from datetime import datetime
 from core.db import (
     init_db, get_setting, set_setting, get_all_settings,
     get_recent_logs, log_comment, add_target_url, export_logs_to_csv,
-    get_fanpages, save_fanpage, set_selected_fanpage, get_selected_fanpage
+    get_fanpages, save_fanpage, set_selected_fanpage, get_selected_fanpage,
+    get_recent_threads_logs, log_threads_comment, export_threads_logs_to_csv,
+    get_recent_x_logs, log_x_comment, export_x_logs_to_csv
 )
 from core.ai_engine import AIEngine
 from core.browser_engine import BrowserEngine
 from core.bot_worker import BotWorker
+from core.threads_engine import ThreadsEngine
+from core.threads_worker import ThreadsWorker
+from core.x_engine import XEngine
+from core.x_worker import XWorker
 from core.telegram_notifier import TelegramNotifier
 
 class DesktopAPI:
@@ -33,6 +39,16 @@ class DesktopAPI:
         self.worker = BotWorker(ui_callback=self._on_worker_event)
         self.login_browser = None
 
+        # Threads State
+        self.threads_live_status = "Hệ thống Threads sẵn sàng."
+        self.threads_countdown_text = ""
+        self.threads_worker = ThreadsWorker(ui_callback=self._on_threads_worker_event)
+
+        # X (Twitter) State
+        self.x_live_status = "Hệ thống 𝕏 (Twitter) sẵn sàng."
+        self.x_countdown_text = ""
+        self.x_worker = XWorker(ui_callback=self._on_x_worker_event)
+
     def _on_worker_event(self, event_type, data):
         if event_type == "status":
             self.live_status = str(data)
@@ -41,6 +57,24 @@ class DesktopAPI:
         elif event_type == "auto_state_changed":
             if not data:
                 self.countdown_text = ""
+
+    def _on_threads_worker_event(self, event_type, data):
+        if event_type == "threads_status":
+            self.threads_live_status = str(data)
+        elif event_type == "threads_countdown":
+            self.threads_countdown_text = str(data)
+        elif event_type == "threads_auto_state_changed":
+            if not data:
+                self.threads_countdown_text = ""
+
+    def _on_x_worker_event(self, event_type, data):
+        if event_type == "x_status":
+            self.x_live_status = str(data)
+        elif event_type == "x_countdown":
+            self.x_countdown_text = str(data)
+        elif event_type == "x_auto_state_changed":
+            if not data:
+                self.x_countdown_text = ""
 
     def get_settings(self):
         return get_all_settings()
@@ -175,6 +209,172 @@ class DesktopAPI:
         path = export_logs_to_csv()
         return {"success": True, "path": path}
 
+    # ==================== THREADS API ====================
+    def open_threads_login_browser(self):
+        """Mở cửa sổ Chrome thật với User Data riêng biệt cho Threads để đăng nhập"""
+        if self.threads_worker.is_running:
+            self.threads_worker.stop()
+        engine = ThreadsEngine(headless=False)
+        engine.open_for_login()
+        self.threads_live_status = "Đang mở trình duyệt Chrome đăng nhập Threads..."
+        return True
+
+    def check_threads_login_status(self):
+        if ThreadsEngine.check_cookie_login():
+            return {"is_logged_in": True}
+        engine = ThreadsEngine(headless=True)
+        is_logged = engine.check_is_logged_in()
+        engine.close()
+        return {"is_logged_in": is_logged}
+
+    def scan_threads_test(self):
+        self.threads_worker.scan_only()
+        return True
+
+    def start_threads_auto(self):
+        self.threads_worker.start_auto()
+        return True
+
+    def stop_threads_auto(self):
+        self.threads_worker.stop()
+        return True
+
+    def get_threads_state(self):
+        logs = get_recent_threads_logs(limit=40)
+        if self.threads_worker.last_scanned_posts:
+            logs = self.threads_worker.last_scanned_posts + logs
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_count = sum(1 for l in logs if l.get("status") == "Đã gửi" and str(l.get("created_at", "")).startswith(today_str))
+        return {
+            "is_auto_running": self.threads_worker.is_running,
+            "live_status": self.threads_live_status,
+            "countdown": self.threads_countdown_text,
+            "logs": logs,
+            "today_count": today_count
+        }
+
+    def send_threads_manual_comment(self, post_url, comment_text):
+        engine = ThreadsEngine(headless=False)
+        success, msg = engine.comment_on_thread(post_url, comment_text)
+        engine.close()
+        if success:
+            log_threads_comment(post_url, "Bình luận thủ công", comment_text, status="Đã gửi")
+            if get_setting("telegram_alerts_enabled", "1") == "1" or get_setting("threads_telegram_alerts_enabled", "1") == "1":
+                today_count = self.threads_worker.count_today_comments()
+                daily_limit = int(get_setting("threads_daily_limit", "30"))
+                TelegramNotifier.notify_threads_comment(
+                    post_url=post_url,
+                    post_content="Bình luận gửi thủ công từ bảng điều khiển",
+                    comment_text=comment_text,
+                    author="Thủ công",
+                    is_general=False,
+                    is_manual=True,
+                    today_count=today_count,
+                    daily_limit=daily_limit
+                )
+        return {"success": success, "message": msg}
+
+    def test_threads_telegram(self):
+        token = get_setting("telegram_bot_token", "")
+        chat_id = get_setting("telegram_chat_id", "")
+        if not token or not chat_id:
+            return {"success": False, "message": "Chưa có Token hoặc Chat ID. Vui lòng nhập vào mục Cài đặt."}
+        success, msg = TelegramNotifier.test_threads_connection(token, chat_id)
+        return {"success": success, "message": msg}
+
+    def toggle_threads_telegram_alerts(self):
+        curr = get_setting("threads_telegram_alerts_enabled", "1")
+        new_val = "0" if curr == "1" else "1"
+        set_setting("threads_telegram_alerts_enabled", new_val)
+        return {"success": True, "enabled": (new_val == "1")}
+
+    def export_threads_csv(self):
+        path = export_threads_logs_to_csv()
+        return {"success": True, "path": path}
+
+    # ==================== 𝕏 (TWITTER) API ====================
+    def open_x_login_browser(self):
+        """Mở cửa sổ Chrome thật với User Data riêng biệt cho 𝕏 để đăng nhập"""
+        if self.x_worker.is_running:
+            self.x_worker.stop()
+        engine = XEngine(headless=False)
+        engine.open_for_login()
+        self.x_live_status = "Đang mở trình duyệt Chrome đăng nhập 𝕏..."
+        return True
+
+    def check_x_login_status(self):
+        if XEngine.check_cookie_login():
+            return {"is_logged_in": True}
+        engine = XEngine(headless=True)
+        is_logged = engine.check_is_logged_in()
+        engine.close()
+        return {"is_logged_in": is_logged}
+
+    def scan_x_test(self):
+        self.x_worker.scan_only()
+        return True
+
+    def start_x_auto(self):
+        self.x_worker.start_auto()
+        return True
+
+    def stop_x_auto(self):
+        self.x_worker.stop()
+        return True
+
+    def get_x_state(self):
+        logs = get_recent_x_logs(limit=40)
+        if self.x_worker.last_scanned_posts:
+            logs = self.x_worker.last_scanned_posts + logs
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_count = sum(1 for l in logs if l.get("status") == "Đã gửi" and str(l.get("created_at", "")).startswith(today_str))
+        return {
+            "is_auto_running": self.x_worker.is_running,
+            "live_status": self.x_live_status,
+            "countdown": self.x_countdown_text,
+            "logs": logs,
+            "today_count": today_count
+        }
+
+    def send_x_manual_comment(self, post_url, comment_text):
+        engine = XEngine(headless=False)
+        success, msg = engine.comment_on_tweet(post_url, comment_text)
+        engine.close()
+        if success:
+            log_x_comment(post_url, "Bình luận thủ công", comment_text, status="Đã gửi")
+            if get_setting("telegram_alerts_enabled", "1") == "1" or get_setting("x_telegram_alerts_enabled", "1") == "1":
+                today_count = self.x_worker.count_today_comments()
+                daily_limit = int(get_setting("x_daily_limit", "100"))
+                TelegramNotifier.notify_x_comment(
+                    post_url=post_url,
+                    post_content="Bình luận gửi thủ công từ bảng điều khiển",
+                    comment_text=comment_text,
+                    author="Thủ công",
+                    is_general=False,
+                    is_manual=True,
+                    today_count=today_count,
+                    daily_limit=daily_limit
+                )
+        return {"success": success, "message": msg}
+
+    def test_x_telegram(self):
+        token = get_setting("telegram_bot_token", "")
+        chat_id = get_setting("telegram_chat_id", "")
+        if not token or not chat_id:
+            return {"success": False, "message": "Chưa có Token hoặc Chat ID. Vui lòng nhập vào mục Cài đặt."}
+        success, msg = TelegramNotifier.test_x_connection(token, chat_id)
+        return {"success": success, "message": msg}
+
+    def toggle_x_telegram_alerts(self):
+        curr = get_setting("x_telegram_alerts_enabled", "1")
+        new_val = "0" if curr == "1" else "1"
+        set_setting("x_telegram_alerts_enabled", new_val)
+        return {"success": True, "enabled": (new_val == "1")}
+
+    def export_x_csv(self):
+        path = export_x_logs_to_csv()
+        return {"success": True, "path": path}
+
 def main():
     # 1. Khởi tạo cơ sở dữ liệu SQLite
     init_db()
@@ -187,7 +387,7 @@ def main():
 
     # 4. Tạo cửa sổ Desktop ứng dụng
     window = webview.create_window(
-        title="Facebook Page Auto Commenter - Pro Edition",
+        title="Facebook, Threads & 𝕏 (Twitter) Auto Commenter - Pro Edition",
         url=web_dir,
         js_api=api,
         width=1240,

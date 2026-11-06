@@ -1,43 +1,33 @@
-# Facebook Page Auto Commenter - Pro Edition 🚀
+# Facebook & Threads Auto Commenter - Pro Edition 🚀
 
-Phần mềm tự động bình luận Facebook chuyên dụng cho **Fanpage** với giao diện Desktop hiện đại, tích hợp **AI Gemini** phân tích ngữ cảnh bài viết để tạo bình luận người thật độc nhất, chống spam và tránh checkpoint tối đa.
+Phần mềm tự động bình luận chuyên nghiệp đa nền tảng cho **Facebook Fanpage** và **Threads (`threads.net`)** với giao diện Desktop hiện đại, tích hợp **AI Gemini 2.5 Flash** phân tích ngữ cảnh bài viết để tự động cào bài thảo luận phim ảnh, tạo bình luận người thật độc nhất, quảng bá thương hiệu tự nhiên, chống spam và tránh checkpoint tối đa.
 
 ---
 
 ## 🌟 Tính Năng Nổi Bật
 
-1. **Giao diện Desktop hiện đại**:
-   - Thiết kế chuẩn Dark Mode (tương tự Threads Auto Poster / Meta Suite).
-   - Bảng theo dõi lịch sử bình luận thời gian thực với đầy đủ thông tin: Bài gốc, Nội dung bình luận, Trạng thái (`Đã gửi`, `Quét thử`, `Lỗi`).
-   - Cột xem trước bài viết được chọn và trình chỉnh sửa bình luận dự kiến.
+1. **🧵 Threads Auto Bot - Tự Động Cào Chủ Đề Phim & Bình Luận Thông Minh**:
+   - Tự động cào các bài thảo luận về phim ảnh mới nhất trên Threads (từ khóa: *phim, review phim, web phim, netflix, cày phim, mọt phim, phim bộ*).
+   - Gemini AI đọc ngữ cảnh từng bài và viết câu trả lời dí dỏm, khéo léo giới thiệu thương hiệu `flexphim chấm top`.
+   - Lưu trữ phiên đăng nhập Threads độc lập trong thư mục `threads_user_data/` (không ảnh hưởng Facebook).
+   - Nút **"Đăng nhập Threads"** mở Chrome thật để bạn đăng nhập tài khoản một lần vĩnh viễn.
 
-2. **Cơ chế hoạt động dạng Fanpage**:
+2. **⚡ Facebook Page Auto Commenter**:
    - Tự động nhận diện và chuyển đổi ngữ cảnh bình luận dưới danh nghĩa **Fanpage** (Meta New Pages Experience).
-   - Mở trình duyệt thật để người dùng đăng nhập tài khoản một lần duy nhất, vượt 2FA an toàn và lưu phiên làm việc (Session/Cookies) tại máy cục bộ.
+   - Quét Newsfeed, Groups hoặc danh sách URL chỉ định.
+   - Cơ chế làm ấm session (Pre-Action Warm-Up) và tự động lách link chống Ghostban.
 
-3. **Công nghệ AI tránh Spam 100%**:
-   - **Google Gemini 1.5/2.0 API**: Tự động đọc tiêu đề và nội dung bài viết, phân tích ngữ cảnh để sinh bình luận tiếng Việt tự nhiên như người dùng thật.
-   - **Cấu hình Persona & Topic**: Thiết lập tính cách Fanpage (hài hước, chuyên gia, thân thiện) và khéo léo chèn thương hiệu/sản phẩm nếu cần.
-   - **Bộ lọc từ khóa (Keywords Filter)**: Chỉ bình luận vào các bài viết có chủ đề hoặc từ khóa liên quan.
-   - **Mẫu Spintax dự phòng**: Hỗ trợ cú pháp `{từ 1|từ 2}` hoạt động độc lập ngay cả khi không dùng API Key.
+3. **Công nghệ AI Gemini 2.5 Flash**:
+   - Tự đọc nội dung bài viết và hình ảnh poster phim (Multimodal Vision).
+   - Tự động sinh câu bình luận ngắn gọn, tự nhiên như người dùng mạng xã hội thực thụ (tối đa 25-30 từ).
+   - Khéo léo nhắc đến thương hiệu: `qua Flex Phim thử đi nè => flexphim chấm top`.
 
 4. **Kỹ thuật Giả lập Người thật & Anti-Checkpoint**:
-   - Sử dụng **Playwright Chromium Stealth**: Ẩn dấu vết webdriver, bảo vệ tài khoản khỏi thuật toán quét bot của Facebook.
-   - **Jitter Delay**: Độ trễ ngẫu nhiên giữa các lần bình luận (ví dụ 150s – 360s).
-   - **Tự động Like trước khi cmt**: Thả Like nhẹ nhàng như người thật để tăng độ uy tín tài khoản.
-   - **Gõ phím ngẫu nhiên (Human Typing)**: Mô phỏng tốc độ gõ từng ký tự của người thật.
-   - **Khung giờ hoạt động an toàn**: Tự động nghỉ ngoài giờ và kiểm soát hạn mức tối đa 25 cmt/ngày.
-   - **Bộ ngắt khẩn cấp (Emergency Circuit Breaker)**: Tự động dừng ngay khi gặp cảnh báo từ Facebook.
-
-5. **Các Tính Năng Chuyên Sâu Mở Rộng**:
-   - **Thông báo Telegram Bot**: Bắn tin nhắn trực tiếp về điện thoại khi cmt thành công hoặc gặp cảnh báo.
-   - **Chiến lược Trả lời (Reply Comment)**: Tự động bấm reply vào bình luận của người hỏi để kích hoạt thông báo chuông.
-   - **Quét bài theo Hội Nhóm (Groups)**: Điều hướng vào các Group phim mục tiêu để quét bài mới nhất.
-   - **Lọc bài viết theo độ tuổi (< 24h)**: Bỏ qua bài viết cũ, tập trung vào bài viết mới để tối đa lượng xem.
-   - **Từ khóa loại trừ (Blacklist)**: Tự động bỏ qua bài bán hàng, tuyển dụng, nhạy cảm.
-   - **Xoay vòng nhiều Fanpage**: Tự động luân phiên đổi qua lại giữa các Fanpage cùng quản lý để tăng quy mô.
-   - **Xuất báo cáo Excel/CSV**: Xuất toàn bộ lịch sử cmt với mã hóa tiếng Việt chuẩn `utf-8-sig`.
-   - **Đóng gói sang .EXE**: Kèm sẵn file `build_exe.bat` để tạo phần mềm độc lập chỉ với 1 click.
+   - **Playwright Chromium Stealth**: Ẩn dấu vết webdriver, chạy 100% ngầm (headless) không làm phiền màn hình.
+   - **Jitter Delay (~2 phút/bài)**: Giãn cách an toàn 110s - 130s giữa các bài viết với đồng hồ đếm ngược trực tiếp.
+   - **Gõ phím ngẫu nhiên (Human Typing)**: Mô phỏng tốc độ gõ phím của người thật.
+   - **Thông báo Telegram Bot**: Gửi thông báo tức thì về điện thoại kèm trích đoạn bài viết, nội dung bình luận và link bài.
+   - **Xuất báo cáo Excel/CSV**: Xuất lịch sử bình luận Facebook và Threads với mã hóa tiếng Việt chuẩn `utf-8-sig`.
 
 ---
 

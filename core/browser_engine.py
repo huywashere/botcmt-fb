@@ -5,6 +5,7 @@ import random
 import asyncio
 from playwright.sync_api import sync_playwright
 from core.db import get_setting, log_comment, is_post_already_commented
+from core.ai_engine import is_vietnamese_text, is_blocked_post
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "user_data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -334,6 +335,14 @@ class BrowserEngine:
                     if p_url in seen_urls:
                         continue
                     seen_urls.add(p_url)
+
+                    # Lọc nghiêm ngặt: Chỉ cmt bài viết tiếng Việt của người Việt Nam
+                    if not is_vietnamese_text(item.get("content", "")):
+                        continue
+
+                    # Né các trang/kênh đối thủ bị chặn (chợ phim, tô phim, sofaflix...)
+                    if is_blocked_post(url=p_url, content=item.get("content", "")):
+                        continue
 
                     if not is_post_already_commented(p_url):
                         posts.append({

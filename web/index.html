@@ -98,9 +98,32 @@
             <span>Hàng đợi</span>
           </button>
 
-          <button onclick="switchTab('newsfeed')" id="nav-newsfeed" class="nav-btn active-nav w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium text-white bg-dark-hover border-l-4 border-brand-500 transition">
-            <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-            <span>Newsfeed</span>
+          <button onclick="switchTab('newsfeed')" id="nav-newsfeed" class="nav-btn active-nav w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-white bg-dark-hover border-l-4 border-brand-500 transition">
+            <div class="flex items-center space-x-3">
+              <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+              <span>Newsfeed FB</span>
+            </div>
+            <span id="sidebarFbRunningBadge" class="hidden text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold animate-pulse">Chạy</span>
+          </button>
+
+          <button onclick="switchTab('threads')" id="nav-threads" class="nav-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition">
+            <div class="flex items-center space-x-3">
+              <svg class="w-4 h-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.891h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/>
+              </svg>
+              <span class="font-semibold text-slate-200">🧵 Threads Bot</span>
+            </div>
+            <span id="sidebarThreadsRunningBadge" class="hidden text-[10px] px-1.5 py-0.5 rounded-full bg-pink-950 text-pink-300 border border-pink-800 font-bold animate-pulse">Chạy</span>
+          </button>
+
+          <button onclick="switchTab('x')" id="nav-x" class="nav-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition">
+            <div class="flex items-center space-x-3">
+              <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              <span class="font-semibold text-slate-200">𝕏 X (Twitter) Bot</span>
+            </div>
+            <span id="sidebarXRunningBadge" class="hidden text-[10px] px-1.5 py-0.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800 font-bold animate-pulse">Chạy</span>
           </button>
 
           <button onclick="switchTab('accounts')" id="nav-accounts" class="nav-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition">
@@ -177,11 +200,22 @@
             <div class="flex items-center space-x-2">
               <span class="text-slate-400">Quét mỗi:</span>
               <select id="selectInterval" onchange="updateInterval(this.value)" class="bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-brand-500">
+                <option value="1">1 phút</option>
+                <option value="2" selected>2 phút</option>
                 <option value="3">3 phút</option>
-                <option value="5" selected>5 phút</option>
+                <option value="5">5 phút</option>
                 <option value="10">10 phút</option>
-                <option value="15">15 phút</option>
-                <option value="30">30 phút</option>
+              </select>
+            </div>
+
+            <!-- Delay / Giãn cách cmt FB dropdown -->
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400 whitespace-nowrap">Giãn cách cmt:</span>
+              <select id="selectFbDelayPreset" onchange="updateFbDelayPreset(this.value)" class="bg-dark-input border border-brand-500/50 rounded-lg px-2.5 py-1.5 text-brand-300 font-semibold focus:outline-none focus:border-brand-500">
+                <option value="1">1 phút (Nhanh)</option>
+                <option value="2" selected>2 phút (Khuyên dùng)</option>
+                <option value="3">3 phút</option>
+                <option value="5">5 phút (Siêu an toàn)</option>
               </select>
             </div>
           </div>
@@ -280,7 +314,360 @@
 
       </div>
 
-      <!-- ==================== TAB: TỔNG QUAN (DASHBOARD) ==================== -->
+      <!-- ==================== TAB: THREADS AUTO BOT (CHỦ ĐỀ PHIM) ==================== -->
+      <div id="tab-content-threads" class="tab-pane hidden flex-1 flex flex-col p-5 overflow-hidden space-y-4">
+
+        <!-- Top bar of Threads tab -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <span class="text-pink-500">🧵</span>
+              <span>Threads Auto Bot</span>
+            </h2>
+            <span class="text-xs bg-pink-950/60 text-pink-300 border border-pink-800/40 px-2.5 py-0.5 rounded-full font-medium">Chuyên mục: Phim Ảnh & Review</span>
+          </div>
+
+          <div class="flex items-center space-x-2.5">
+            <!-- Telegram Alert Status Toggle for Threads -->
+            <button id="btnThreadsTelegramToggle" onclick="toggleThreadsTelegram()" class="px-3 py-1.5 text-xs font-medium bg-[#132235] hover:bg-[#1a2f48] text-sky-400 border border-sky-600/40 rounded-md transition flex items-center space-x-1.5 shadow-sm" title="Bật/Tắt thông báo tức thì về điện thoại qua Telegram Bot">
+              <span id="threadsTelegramDot" class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+              <span id="threadsTelegramStatusText">Báo Telegram: Bật</span>
+            </button>
+            <button onclick="testThreadsTelegram()" class="px-2.5 py-1.5 text-xs font-medium bg-[#22222d] hover:bg-[#2b2b3a] text-slate-200 rounded-md transition border border-dark-border flex items-center space-x-1" title="Bấm để gửi tin nhắn thử nghiệm về Telegram">
+              <span>📲</span>
+              <span>Test Telegram</span>
+            </button>
+            <button onclick="openThreadsLoginBrowser()" class="px-3.5 py-1.5 text-xs font-semibold bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-md shadow-sm transition flex items-center space-x-1.5">
+              <span>🌐</span>
+              <span>Đăng nhập Threads</span>
+            </button>
+            <button onclick="checkThreadsLoginStatus()" class="px-3 py-1.5 text-xs font-medium bg-[#22222d] hover:bg-[#2b2b3a] text-slate-200 rounded-md transition border border-dark-border">
+              Kiểm tra đăng nhập
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="bg-dark-card border border-dark-border rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex flex-wrap items-center gap-3 flex-1">
+            <!-- Keyword search filter for movie threads -->
+            <div class="flex items-center space-x-2 min-w-[260px] flex-1">
+              <span class="text-slate-400 whitespace-nowrap">Từ khóa cào:</span>
+              <input id="inputThreadsKeywords" type="text" onchange="saveThreadsKeywords(this.value)" class="w-full bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-pink-500 text-xs font-mono" placeholder="phim, review phim, web phim, netflix...">
+            </div>
+
+            <!-- Scan Interval dropdown -->
+            <div class="flex items-center space-x-2 whitespace-nowrap">
+              <span class="text-slate-400">Cào mỗi:</span>
+              <select id="selectThreadsInterval" onchange="updateThreadsInterval(this.value)" class="bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-pink-500">
+                <option value="1">1 phút</option>
+                <option value="2" selected>2 phút (Khuyên dùng)</option>
+                <option value="3">3 phút</option>
+                <option value="5">5 phút</option>
+              </select>
+            </div>
+
+            <!-- Delay / Giãn cách cmt Threads dropdown -->
+            <div class="flex items-center space-x-2 whitespace-nowrap">
+              <span class="text-slate-400">Giãn cách cmt:</span>
+              <select id="selectThreadsDelayPreset" onchange="updateThreadsDelayPreset(this.value)" class="bg-dark-input border border-pink-500/50 rounded-lg px-2.5 py-1.5 text-pink-300 font-semibold focus:outline-none focus:border-pink-500">
+                <option value="1">1 phút (Nhanh)</option>
+                <option value="2" selected>2 phút (Khuyên dùng)</option>
+                <option value="3">3 phút</option>
+                <option value="5">5 phút (Siêu an toàn)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex items-center space-x-2 shrink-0">
+            <button onclick="runThreadsScanOnly()" class="px-3 py-1.5 bg-[#252532] hover:bg-[#303042] text-slate-200 rounded-lg font-medium transition whitespace-nowrap">
+              Cào thử - chưa gửi
+            </button>
+            <button id="btnThreadsAutoToggle" onclick="toggleThreadsAutoComment()" class="px-4 py-1.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg font-semibold transition whitespace-nowrap">
+              Bật tự cào & bình luận
+            </button>
+            <button onclick="stopThreadsAutoComment()" class="px-3 py-1.5 bg-[#2a1b1b] hover:bg-[#3b2424] text-red-300 rounded-lg font-medium transition border border-red-900/30 whitespace-nowrap">
+              Dừng
+            </button>
+            <span id="threadsAutoStatusPill" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 whitespace-nowrap">
+              Đang dừng
+            </span>
+          </div>
+        </div>
+
+        <!-- Status & Countdown banner -->
+        <div class="bg-[#121217] border border-dark-border rounded-xl p-3 text-xs text-slate-300 font-mono space-y-1">
+          <div class="flex items-center justify-between text-slate-400 leading-relaxed">
+            <div class="flex items-center space-x-2">
+              <span class="text-pink-500 font-bold">●</span>
+              <span id="threadsLoginStatusBadge" class="text-emerald-400 font-medium">Trạng thái: Sẵn sàng</span>
+              <span class="text-[10px] text-amber-300 font-medium border border-amber-900/50 bg-amber-950/40 px-2 py-0.5 rounded-full" title="Tự động né bình luận các trang đối thủ">🛡️ Né: Chợ Phim, Tô Phim, Sofaflix</span>
+            </div>
+            <span class="text-[11px] text-slate-500">Thương hiệu: <strong class="text-pink-300">flexphim</strong> <span class="text-slate-400 font-sans">(nhắc tự nhiên: ghé flexphim, trên flexphim, qua flexphim...)</span></span>
+          </div>
+          <div class="flex justify-between items-center pt-1 border-t border-dark-border/50 text-[11px] text-slate-500">
+            <span id="threadsStatusLiveText">Sẵn sàng cào bài và bình luận Threads.</span>
+            <span id="threadsCountdownTimer" class="text-pink-500 font-semibold"></span>
+          </div>
+        </div>
+
+        <!-- Two Column Main Body: History Table (Left) + Selected Post Card (Right) -->
+        <div class="flex-1 flex gap-4 overflow-hidden">
+
+          <!-- Left Table: Lịch sử cào & bình luận Threads -->
+          <div class="flex-[3] bg-dark-card border border-dark-border rounded-xl flex flex-col overflow-hidden">
+            <div class="px-4 py-3 border-b border-dark-border flex justify-between items-center">
+              <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                <span>💬</span>
+                <span>Lịch sử cào & bình luận Threads</span>
+              </h3>
+              <div class="flex items-center space-x-2">
+                <button onclick="exportThreadsLogsCSV()" class="px-2.5 py-1 text-[11px] bg-[#22222d] hover:bg-[#2c2c3c] text-slate-300 rounded border border-dark-border flex items-center space-x-1">
+                  <span>📥</span>
+                  <span>Xuất Excel/CSV</span>
+                </button>
+                <span id="threadsTotalCommentedBadge" class="text-xs text-slate-400">0 bài viết</span>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-[#121217] text-slate-400 uppercase tracking-wider sticky top-0 text-[10px]">
+                  <tr>
+                    <th class="py-2.5 px-3 font-semibold">Chủ đề thảo luận phim</th>
+                    <th class="py-2.5 px-3 font-semibold">Bình luận thông minh</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="threadsLogsTableBody" class="divide-y divide-dark-border/60">
+                  <!-- Log Rows inserted here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right Card: Bài Threads được chọn & Gửi thủ công -->
+          <div class="flex-[2] bg-dark-card border border-dark-border rounded-xl p-4 flex flex-col justify-between overflow-hidden">
+            <div class="space-y-3 flex-1 flex flex-col overflow-hidden">
+              <h3 class="text-sm font-semibold text-slate-200 border-b border-dark-border pb-2 flex items-center space-x-1.5">
+                <span>🎬</span>
+                <span>Bài Threads được chọn</span>
+              </h3>
+              
+              <!-- Original Post Preview -->
+              <div class="flex-1 bg-dark-input border border-dark-border rounded-lg p-3 overflow-y-auto">
+                <p id="selectedThreadsSnippet" class="text-xs text-slate-400 italic">
+                  Chưa chọn bài nào. Hãy click vào 1 hàng bên danh sách để xem chi tiết hoặc bấm 'Cào thử'.
+                </p>
+              </div>
+
+              <!-- Planned Comment Textarea -->
+              <div class="space-y-1">
+                <label class="text-[11px] font-medium text-slate-400">Bình luận dự kiến:</label>
+                <textarea id="selectedThreadsCommentText" rows="3" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-pink-500" placeholder="Bình luận dự kiến..."></textarea>
+              </div>
+            </div>
+
+            <!-- Bottom action buttons for selected card -->
+            <div class="flex items-center space-x-2 pt-3 border-t border-dark-border mt-3">
+              <button onclick="openOriginalThreadsUrl()" class="flex-1 py-2 text-xs font-medium bg-[#22222d] hover:bg-[#2c2c3c] text-slate-200 rounded-lg transition border border-dark-border">
+                Mở bài Threads gốc
+              </button>
+              <button onclick="sendThreadsManualComment()" class="flex-1 py-2 text-xs font-semibold bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg transition">
+                Gửi bình luận
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================== TAB: 𝕏 (TWITTER) AUTO BOT ==================== -->
+      <div id="tab-content-x" class="tab-pane hidden flex-1 flex flex-col p-5 overflow-hidden space-y-4">
+
+        <!-- Top bar of X tab -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <span class="text-sky-400 font-bold">𝕏</span>
+              <span>X (Twitter) Auto Bot</span>
+            </h2>
+            <span class="text-xs bg-sky-950/60 text-sky-300 border border-sky-800/40 px-2.5 py-0.5 rounded-full font-medium">Chuyên mục: Phim Ảnh & Review</span>
+          </div>
+
+          <div class="flex items-center space-x-2.5">
+            <!-- Telegram Alert Status Toggle for X -->
+            <button id="btnXTelegramToggle" onclick="toggleXTelegram()" class="px-3 py-1.5 text-xs font-medium bg-[#132235] hover:bg-[#1a2f48] text-sky-400 border border-sky-600/40 rounded-md transition flex items-center space-x-1.5 shadow-sm" title="Bật/Tắt thông báo tức thì về điện thoại qua Telegram Bot">
+              <span id="xTelegramDot" class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+              <span id="xTelegramStatusText">Báo Telegram: Bật</span>
+            </button>
+            <button onclick="testXTelegram()" class="px-2.5 py-1.5 text-xs font-medium bg-[#22222d] hover:bg-[#2b2b3a] text-slate-200 rounded-md transition border border-dark-border flex items-center space-x-1" title="Bấm để gửi tin nhắn thử nghiệm về Telegram">
+              <span>📲</span>
+              <span>Test Telegram</span>
+            </button>
+            <button onclick="openXLoginBrowser()" class="px-3.5 py-1.5 text-xs font-semibold bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-md shadow-sm transition flex items-center space-x-1.5">
+              <span>🌐</span>
+              <span>Đăng nhập 𝕏</span>
+            </button>
+            <button onclick="checkXLoginStatus()" class="px-3 py-1.5 text-xs font-medium bg-[#22222d] hover:bg-[#2b2b3a] text-slate-200 rounded-md transition border border-dark-border">
+              Kiểm tra đăng nhập
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="bg-dark-card border border-dark-border rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex flex-wrap items-center gap-3 flex-1">
+            <!-- Keyword search filter for movie tweets -->
+            <div class="flex flex-col space-y-1 min-w-[300px] flex-1">
+              <div class="flex items-center space-x-2">
+                <span class="text-slate-400 whitespace-nowrap">Từ khóa cào:</span>
+                <input id="inputXKeywords" type="text" onchange="saveXKeywords(this.value)" class="w-full bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500 text-xs font-mono" placeholder="phim, review phim, web phim, netflix...">
+              </div>
+              <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 pl-16">
+                <span class="text-slate-500">Bắt trend:</span>
+                <button type="button" onclick="setXKeywordsPreset('hot')" class="px-1.5 py-0.5 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-800/40" title="Cào phim rạp và bom tấn hot">🔥 Phim Rạp & Hot</button>
+                <button type="button" onclick="setXKeywordsPreset('netflix')" class="px-1.5 py-0.5 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-800/40" title="Cào phim bộ và netflix">🍿 Netflix & Cày Phim</button>
+                <button type="button" onclick="setXKeywordsPreset('18')" class="px-1.5 py-0.5 rounded bg-pink-950/70 hover:bg-pink-900 text-pink-300 border border-pink-800/40" title="Cào phim 18+ và cảnh nóng">🔞 Phim 18+ & Cảnh Nóng</button>
+                <button type="button" onclick="setXKeywordsPreset('anime')" class="px-1.5 py-0.5 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-800/40" title="Cào anime và phim Hàn">🎬 Anime & Kdrama</button>
+              </div>
+            </div>
+
+            <!-- Scan Interval dropdown -->
+            <div class="flex items-center space-x-2 whitespace-nowrap">
+              <span class="text-slate-400">Cào mỗi:</span>
+              <select id="selectXInterval" onchange="updateXInterval(this.value)" class="bg-dark-input border border-dark-border rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                <option value="1">1 phút</option>
+                <option value="2" selected>2 phút (Khuyên dùng)</option>
+                <option value="3">3 phút</option>
+                <option value="5">5 phút</option>
+              </select>
+            </div>
+
+            <!-- Delay / Giãn cách cmt X dropdown -->
+            <div class="flex items-center space-x-2 whitespace-nowrap">
+              <span class="text-slate-400">Giãn cách:</span>
+              <select id="selectXDelayPreset" onchange="updateXDelayPreset(this.value)" class="bg-dark-input border border-sky-500/50 rounded-lg px-2 py-1.5 text-sky-300 font-semibold focus:outline-none focus:border-sky-500">
+                <option value="1">1 phút (Nhanh)</option>
+                <option value="2" selected>2 phút (Khuyên dùng)</option>
+                <option value="3">3 phút</option>
+                <option value="5">5 phút (Siêu an toàn)</option>
+              </select>
+            </div>
+
+            <!-- Daily Limit on X -->
+            <div class="flex items-center space-x-1.5 whitespace-nowrap" title="Giới hạn số bình luận tối đa mỗi ngày trên 𝕏">
+              <span class="text-slate-400">Giới hạn/ngày:</span>
+              <input id="inputXDailyLimit" type="number" min="10" max="250" value="100" onchange="saveXDailyLimit(this.value)" class="w-16 bg-dark-input border border-sky-500/50 rounded-lg px-2 py-1.5 text-sky-300 font-bold text-center focus:outline-none focus:border-sky-500">
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex items-center space-x-2 shrink-0">
+            <button onclick="runXScanOnly()" class="px-3 py-1.5 bg-[#252532] hover:bg-[#303042] text-slate-200 rounded-lg font-medium transition whitespace-nowrap">
+              Cào thử - chưa gửi
+            </button>
+            <button id="btnXAutoToggle" onclick="toggleXAutoComment()" class="px-4 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg font-semibold transition whitespace-nowrap">
+              Bật tự cào & bình luận
+            </button>
+            <button onclick="stopXAutoComment()" class="px-3 py-1.5 bg-[#2a1b1b] hover:bg-[#3b2424] text-red-300 rounded-lg font-medium transition border border-red-900/30 whitespace-nowrap">
+              Dừng
+            </button>
+            <span id="xAutoStatusPill" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-800 text-zinc-400 border border-zinc-700 whitespace-nowrap">
+              Đang dừng
+            </span>
+          </div>
+        </div>
+
+        <!-- Status & Countdown banner -->
+        <div class="bg-[#121217] border border-dark-border rounded-xl p-3 text-xs text-slate-300 font-mono space-y-1">
+          <div class="flex items-center justify-between text-slate-400 leading-relaxed">
+            <div class="flex items-center space-x-3">
+              <span class="text-sky-400 font-bold">●</span>
+              <span id="xLoginStatusBadge" class="text-emerald-400 font-medium">Trạng thái: Sẵn sàng</span>
+              <span class="text-[10px] text-pink-400 font-medium border border-pink-900/50 bg-pink-950/40 px-2 py-0.5 rounded-full">♥ Tự động Thả Tim bài</span>
+            </div>
+            <span class="text-[11px] text-slate-500">Thương hiệu: <strong class="text-sky-300">flexphim</strong> <span class="text-slate-400 font-sans">(nhắc tự nhiên: ghé flexphim, trên flexphim, qua flexphim...)</span></span>
+          </div>
+          <div class="flex justify-between items-center pt-1 border-t border-dark-border/50 text-[11px] text-slate-500">
+            <span id="xStatusLiveText">Sẵn sàng cào tweet và bình luận 𝕏.</span>
+            <span id="xCountdownTimer" class="text-sky-400 font-semibold"></span>
+          </div>
+        </div>
+
+        <!-- Two Column Main Body: History Table (Left) + Selected Post Card (Right) -->
+        <div class="flex-1 flex gap-4 overflow-hidden">
+
+          <!-- Left Table: Lịch sử cào & bình luận X -->
+          <div class="flex-[3] bg-dark-card border border-dark-border rounded-xl flex flex-col overflow-hidden">
+            <div class="px-4 py-3 border-b border-dark-border flex justify-between items-center">
+              <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                <span>💬</span>
+                <span>Lịch sử cào & bình luận 𝕏 (Twitter)</span>
+              </h3>
+              <div class="flex items-center space-x-2">
+                <button onclick="exportXLogsCSV()" class="px-2.5 py-1 text-[11px] bg-[#22222d] hover:bg-[#2c2c3c] text-slate-300 rounded border border-dark-border flex items-center space-x-1">
+                  <span>📥</span>
+                  <span>Xuất Excel/CSV</span>
+                </button>
+                <span id="xTotalCommentedBadge" class="text-xs text-slate-400">0 bài viết</span>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-[#121217] text-slate-400 uppercase tracking-wider sticky top-0 text-[10px]">
+                  <tr>
+                    <th class="py-2.5 px-3 font-semibold">Tweet thảo luận phim</th>
+                    <th class="py-2.5 px-3 font-semibold">Bình luận thông minh</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="xLogsTableBody" class="divide-y divide-dark-border/60">
+                  <!-- Log Rows inserted here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right Card: Tweet X được chọn & Gửi thủ công -->
+          <div class="flex-[2] bg-dark-card border border-dark-border rounded-xl p-4 flex flex-col justify-between overflow-hidden">
+            <div class="space-y-3 flex-1 flex flex-col overflow-hidden">
+              <h3 class="text-sm font-semibold text-slate-200 border-b border-dark-border pb-2 flex items-center space-x-1.5">
+                <span>🎬</span>
+                <span>Tweet 𝕏 được chọn</span>
+              </h3>
+              
+              <!-- Original Post Preview -->
+              <div class="flex-1 bg-dark-input border border-dark-border rounded-lg p-3 overflow-y-auto">
+                <p id="selectedXSnippet" class="text-xs text-slate-400 italic">
+                  Chưa chọn bài nào. Hãy click vào 1 hàng bên danh sách để xem chi tiết hoặc bấm 'Cào thử'.
+                </p>
+              </div>
+
+              <!-- Planned Comment Textarea -->
+              <div class="space-y-1">
+                <label class="text-[11px] font-medium text-slate-400">Bình luận dự kiến:</label>
+                <textarea id="selectedXCommentText" rows="3" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500" placeholder="Bình luận dự kiến..."></textarea>
+              </div>
+            </div>
+
+            <!-- Bottom action buttons for selected card -->
+            <div class="flex items-center space-x-2 pt-3 border-t border-dark-border mt-3">
+              <button onclick="openOriginalXUrl()" class="flex-1 py-2 text-xs font-medium bg-[#22222d] hover:bg-[#2c2c3c] text-slate-200 rounded-lg transition border border-dark-border">
+                Mở Tweet gốc
+              </button>
+              <button onclick="sendXManualComment()" class="flex-1 py-2 text-xs font-semibold bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg transition">
+                Gửi bình luận
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
       <div id="tab-content-dashboard" class="tab-pane hidden flex-1 p-6 space-y-6 overflow-y-auto">
         <h2 class="text-xl font-bold text-white">Tổng quan hiệu suất</h2>
 
@@ -354,6 +741,11 @@
             <div class="space-y-1">
               <label class="text-xs text-slate-400">Từ khóa loại trừ (Bỏ qua bài bán hàng, tuyển dụng, nhạy cảm):</label>
               <input id="inputBlacklist" type="text" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200" placeholder="VD: tuyển dụng, bán hàng, vay tiền, scam...">
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs text-slate-400">Các trang / Kênh đối thủ loại trừ (Né bình luận, cách nhau bằng dấu phẩy):</label>
+              <input id="inputBlockedAuthors" type="text" class="w-full bg-dark-input border border-amber-500/40 rounded-lg p-2.5 text-xs text-slate-200" placeholder="chợ phim, tô phim, sofaflix, chophim, tophim...">
             </div>
 
             <div class="grid grid-cols-2 gap-3 pt-1">
@@ -531,6 +923,11 @@
                 <input id="inputWarmup" type="checkbox" checked class="rounded bg-dark-input border-dark-border text-brand-600 focus:ring-0">
                 <span>Lướt dạo làm ấm session 45s trước khi cmt (Pre-Action Warm-Up)</span>
               </label>
+
+              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+                <input id="inputFallbackGeneral" type="checkbox" checked class="rounded bg-dark-input border-dark-border text-brand-600 focus:ring-0">
+                <span>Tự động chuyển sang bài viết thường văn bản nếu không có bài phim (Smart Fallback)</span>
+              </label>
             </div>
 
             <!-- Telegram Bot Alert Box -->
@@ -553,24 +950,68 @@
                 <input id="inputTelegramChatId" type="text" class="w-full bg-dark-input border border-dark-border rounded-lg p-2 text-xs text-slate-200" placeholder="987654321">
               </div>
 
-              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer pt-1">
-                <input id="inputTelegramAlerts" type="checkbox" class="rounded bg-dark-input border-dark-border text-brand-600 focus:ring-0">
-                <span>Bật thông báo tự động về điện thoại khi cmt xong</span>
-              </label>
+              <div class="space-y-1.5 pt-1">
+                <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+                  <input id="inputTelegramAlerts" type="checkbox" class="rounded bg-dark-input border-dark-border text-brand-600 focus:ring-0">
+                  <span>Bật thông báo khi bình luận Facebook</span>
+                </label>
+                <label class="flex items-center space-x-2 text-xs text-pink-300 cursor-pointer">
+                  <input id="inputThreadsTelegramAlerts" type="checkbox" class="rounded bg-dark-input border-dark-border text-pink-500 focus:ring-0">
+                  <span>Bật thông báo khi bình luận Threads (Kèm phân loại phim & link bài)</span>
+                </label>
+                <label class="flex items-center space-x-2 text-xs text-sky-300 cursor-pointer">
+                  <input id="inputXTelegramAlerts" type="checkbox" class="rounded bg-dark-input border-dark-border text-sky-500 focus:ring-0">
+                  <span>Bật thông báo khi bình luận 𝕏 (Kèm phân loại phim & link tweet)</span>
+                </label>
+              </div>
             </div>
           </div>
 
           <!-- Anti-Ban & Jitter Delay -->
           <div class="bg-dark-card border border-dark-border p-4 rounded-xl space-y-4">
-            <h3 class="text-sm font-semibold text-slate-200">Độ trễ an toàn (Jitter Delay)</h3>
+            <h3 class="text-sm font-semibold text-slate-200">Độ trễ an toàn khi chạy nền (Jitter Delay)</h3>
+
+            <!-- Preset Delays -->
+            <div class="grid grid-cols-3 gap-2">
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">Giãn cách FB:</label>
+                <select id="selectSettingsFbDelay" onchange="onSettingsFbDelayChange(this.value)" class="w-full bg-dark-input border border-brand-500/50 rounded-lg p-2 text-xs text-brand-300 font-semibold">
+                  <option value="1">1 phút (Nhanh: ~60s)</option>
+                  <option value="2" selected>2 phút (Khuyên dùng)</option>
+                  <option value="3">3 phút (~180s)</option>
+                  <option value="5">5 phút (Siêu an toàn)</option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">Giãn cách Threads:</label>
+                <select id="selectSettingsThreadsDelay" onchange="onSettingsThreadsDelayChange(this.value)" class="w-full bg-dark-input border border-pink-500/50 rounded-lg p-2 text-xs text-pink-300 font-semibold">
+                  <option value="1">1 phút (Nhanh: ~60s)</option>
+                  <option value="2" selected>2 phút (Khuyên dùng)</option>
+                  <option value="3">3 phút (~180s)</option>
+                  <option value="5">5 phút (Siêu an toàn)</option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">Giãn cách 𝕏:</label>
+                <select id="selectSettingsXDelay" onchange="onSettingsXDelayChange(this.value)" class="w-full bg-dark-input border border-sky-500/50 rounded-lg p-2 text-xs text-sky-300 font-semibold">
+                  <option value="1">1 phút (Nhanh: ~60s)</option>
+                  <option value="2" selected>2 phút (Khuyên dùng)</option>
+                  <option value="3">3 phút (~180s)</option>
+                  <option value="5">5 phút (Siêu an toàn)</option>
+                </select>
+              </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1">
-                <label class="text-xs text-slate-400">Delay tối thiểu (giây):</label>
-                <input id="inputMinDelay" type="number" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200" value="120">
+                <label class="text-xs text-slate-400">FB Delay tối thiểu (giây):</label>
+                <input id="inputMinDelay" type="number" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200" value="110">
               </div>
               <div class="space-y-1">
-                <label class="text-xs text-slate-400">Delay tối đa (giây):</label>
-                <input id="inputMaxDelay" type="number" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200" value="300">
+                <label class="text-xs text-slate-400">FB Delay tối đa (giây):</label>
+                <input id="inputMaxDelay" type="number" class="w-full bg-dark-input border border-dark-border rounded-lg p-2.5 text-xs text-slate-200" value="130">
               </div>
             </div>
 
