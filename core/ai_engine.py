@@ -116,13 +116,15 @@ def is_movie_related(text, custom_keywords=None):
 DEFAULT_BLOCKED_AUTHORS = [
     "chợ phim", "chophim", "cho phim",
     "tô phim", "tophim", "to phim",
-    "sofaflix", "sofa flix", "sofa_flix"
+    "sofaflix", "sofa flix", "sofa_flix",
+    "mâm phim", "mamphim", "mam phim", "mam_phim",
+    "vườn phim", "vuonphim", "vuon phim", "vuon_phim"
 ]
 
 def is_blocked_post(author="", url="", content=""):
     """
     Kiểm tra xem bài viết có thuộc các trang/kênh bị chặn né bình luận hay không
-    (Ví dụ: chợ phim, tô phim, sofaflix...)
+    (Ví dụ: chợ phim, tô phim, sofaflix, mâm phim, vườn phim...)
     Kiểm tra trên cả Tên tác giả, Username/Handle trên URL và Nội dung bài viết.
     """
     author_clean = (author or "").lower()

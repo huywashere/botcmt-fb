@@ -478,7 +478,7 @@ class XEngine:
         # Kiểm tra trước khi mở trình duyệt
         if is_blocked_post(url=tweet_url):
             print(f"[X] Bỏ qua cmt: URL thuộc trang né cmt: {tweet_url}")
-            return False, "Trang thuộc danh sách chặn né bình luận (chợ phim, tô phim, sofaflix...)"
+            return False, "Trang thuộc danh sách chặn né bình luận (chợ phim, tô phim, sofaflix, mâm phim, vườn phim...)"
 
         self.start()
         try:
@@ -496,7 +496,7 @@ class XEngine:
             current_url = self.page.url
             if is_blocked_post(url=current_url, content=page_text[:600]):
                 print(f"[X] Phát hiện trang thuộc danh sách né cmt: {current_url}")
-                return False, "Trang thuộc danh sách chặn né bình luận (chợ phim, tô phim, sofaflix...)"
+                return False, "Trang thuộc danh sách chặn né bình luận (chợ phim, tô phim, sofaflix, mâm phim, vườn phim...)"
 
             # Tự động thả Tim (Like) Tweet trước khi bình luận (Tạo thông báo kép kích thích tác giả tương tác)
             if get_setting("auto_like_enabled", "1") == "1":

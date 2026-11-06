@@ -126,8 +126,8 @@ def init_db():
         "telegram_bot_token": "",
         "telegram_chat_id": "",
         "telegram_alerts_enabled": "0",
-        "blacklist_keywords": "tuyển dụng, tuyển nv, bán hàng, giá rẻ, vay tiền, vay nhanh, scam, lừa đảo, cờ bạc, bóng đá, chính trị, chợ phim, tô phim, sofaflix",
-        "blocked_authors": "chợ phim, to phim, tô phim, sofaflix, chophim, tophim, sofa flix",
+        "blacklist_keywords": "tuyển dụng, tuyển nv, bán hàng, giá rẻ, vay tiền, vay nhanh, scam, lừa đảo, cờ bạc, bóng đá, chính trị, chợ phim, tô phim, sofaflix, mâm phim, vườn phim, mamphim, vuonphim",
+        "blocked_authors": "chợ phim, to phim, tô phim, sofaflix, chophim, tophim, sofa flix, mâm phim, mamphim, mam phim, vườn phim, vuonphim, vuon phim",
         "max_post_age_hours": "24",  # Chỉ cmt bài đăng trong vòng 24h
         "comment_mode": "both",      # "post" (bình luận bài), "reply" (ưu tiên trả lời cmt người hỏi), "both"
         "fanpage_rotation_list": "Flex Phim",  # Danh sách tên các Fanpage cần xoay vòng (cách nhau bởi dấu phẩy)

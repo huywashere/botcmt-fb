@@ -64,10 +64,10 @@ async function loadConfig() {
       
       // Cấu hình mở rộng mới
       if (document.getElementById('inputBlacklist')) document.getElementById('inputBlacklist').value = settings.blacklist_keywords || '';
-      if (document.getElementById('inputBlockedAuthors')) document.getElementById('inputBlockedAuthors').value = settings.blocked_authors || 'chợ phim, to phim, tô phim, sofaflix, chophim, tophim, sofa flix';
+      if (document.getElementById('inputBlockedAuthors')) document.getElementById('inputBlockedAuthors').value = settings.blocked_authors || 'chợ phim, to phim, tô phim, sofaflix, chophim, tophim, sofa flix, mâm phim, mamphim, vườn phim, vuonphim';
       if (document.getElementById('selectCommentMode')) document.getElementById('selectCommentMode').value = settings.comment_mode || 'both';
       if (document.getElementById('selectMaxPostAge')) document.getElementById('selectMaxPostAge').value = settings.max_post_age_hours || '24';
-      if (document.getElementById('inputFanpageRotation')) document.getElementById('inputFanpageRotation').value = settings.fanpage_rotation_list || 'Vườn Phim';
+      if (document.getElementById('inputFanpageRotation')) document.getElementById('inputFanpageRotation').value = settings.fanpage_rotation_list || 'Flex Phim';
       if (document.getElementById('selectRotateThreshold')) document.getElementById('selectRotateThreshold').value = settings.rotate_every_n_comments || '5';
       if (document.getElementById('inputTelegramToken')) document.getElementById('inputTelegramToken').value = settings.telegram_bot_token || '';
       if (document.getElementById('inputTelegramChatId')) document.getElementById('inputTelegramChatId').value = settings.telegram_chat_id || '';
