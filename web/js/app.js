@@ -1131,10 +1131,11 @@ function renderXLogsTable(logs) {
   }).join('');
 }
 
-// ==================== CÀI ĐẶT THỜI GIAN CMT 𝕏 CHẠY NỀN (1p, 2p, 3p, 5p) ====================
+// ==================== CÀI ĐẶT THỜI GIAN CMT 𝕏 CHẠY NỀN (30s, 1p, 2p, 3p, 5p) ====================
 async function updateXDelayPreset(val) {
   let minSec = 110, maxSec = 130;
-  if (val === "1") { minSec = 50; maxSec = 70; }
+  if (val === "0.5") { minSec = 25; maxSec = 35; }
+  else if (val === "1") { minSec = 50; maxSec = 70; }
   else if (val === "2") { minSec = 110; maxSec = 130; }
   else if (val === "3") { minSec = 170; maxSec = 190; }
   else if (val === "5") { minSec = 280; maxSec = 320; }

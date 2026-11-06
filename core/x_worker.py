@@ -177,7 +177,7 @@ class XWorker:
                             consecutive_errors = 0
                             commented_this_round += 1
                             log_x_comment(post_url, post_content, comment_text, status="Đã gửi")
-                            self.notify_ui("x_status", f"Đã gửi cmt thành công lên Tweet 𝕏: {post_url[:35]}...")
+                            self.notify_ui("x_status", f"Đã gửi cmt thành công lên Tweet 𝕏: {post_url[:35]}! Đang chờ an toàn...")
 
                             # Bắn thông báo Telegram
                             if get_setting("telegram_alerts_enabled", "1") == "1" or get_setting("x_telegram_alerts_enabled", "1") == "1":
@@ -204,9 +204,10 @@ class XWorker:
                                     break
                                 mins = remaining // 60
                                 secs = remaining % 60
-                                self.notify_ui("x_countdown", f"chờ Tweet tiếp theo: {mins}:{secs:02d}")
+                                self.notify_ui("x_countdown", f"⏱️ Chờ an toàn bài tiếp: {mins}:{secs:02d}")
                                 time.sleep(1)
                             self.notify_ui("x_countdown", "")
+                            self.notify_ui("x_status", "Hết thời gian chờ an toàn. Đang quét tiếp...")
 
                         else:
                             consecutive_errors += 1

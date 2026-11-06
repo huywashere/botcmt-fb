@@ -489,8 +489,18 @@ class XEngine:
         try:
             tweet_url = tweet_url.replace("twitter.com", "x.com")
             print(f"[X] Đang mở Tweet: {tweet_url}")
-            self.page.goto(tweet_url, wait_until="domcontentloaded", timeout=20000)
-            time.sleep(random.uniform(2.5, 3.5))
+            self.page.goto(tweet_url, wait_until="domcontentloaded", timeout=25000)
+
+            # BẮT BUỘC: Đợi tweet tải xong hoàn toàn (thoát khỏi màn hình loading spinner)
+            tweet_el = None
+            try:
+                tweet_el = self.page.wait_for_selector('article[data-testid="tweet"]', timeout=15000)
+            except Exception:
+                pass
+
+            if not tweet_el:
+                time.sleep(3.0)
+                tweet_el = self.page.query_selector('article[data-testid="tweet"]')
 
             # Kiểm tra Tweet bị xóa hoặc 404
             page_text = self.page.inner_text("body")
@@ -506,7 +516,7 @@ class XEngine:
             # 1. Tự động thả Tim (Like) Tweet trước khi bình luận (nếu bật)
             if get_setting("auto_like_enabled", "1") == "1":
                 try:
-                    like_btn = self.page.query_selector('article[data-testid="tweet"] button[data-testid="like"], button[data-testid="like"]')
+                    like_btn = (tweet_el or self.page).query_selector('button[data-testid="like"]')
                     if like_btn:
                         like_btn.click()
                         time.sleep(random.uniform(0.8, 1.2))
@@ -514,15 +524,20 @@ class XEngine:
                     pass
 
             # 2. MỞ KHUNG SOẠN THẢO TRẢ LỜI (Ưu tiên Modal Reply - Ổn định nhất trên Twitter)
-            reply_btn = self.page.query_selector('article[data-testid="tweet"] button[data-testid="reply"], button[data-testid="reply"]')
+            reply_btn = (tweet_el or self.page).query_selector('button[data-testid="reply"], div[data-testid="reply"]')
             if reply_btn:
                 try:
                     reply_btn.click()
-                    time.sleep(random.uniform(1.2, 1.8))
+                    time.sleep(random.uniform(1.5, 2.0))
                 except Exception:
                     pass
 
-            # Xác định vùng chứa soạn thảo: nếu có dialog modal thì dùng dialog, ngược lại dùng page
+            # Đợi dialog modal xuất hiện
+            try:
+                self.page.wait_for_selector('div[role="dialog"]', timeout=5000)
+            except Exception:
+                pass
+
             dialog = self.page.query_selector('div[role="dialog"]')
             container = dialog if dialog else self.page
 
@@ -542,7 +557,7 @@ class XEngine:
                 if inline_trigger:
                     try:
                         inline_trigger.click()
-                        time.sleep(1.0)
+                        time.sleep(1.2)
                     except Exception:
                         pass
                 input_box = self.page.query_selector('div[data-testid="tweetTextarea_0"], div[role="textbox"][contenteditable="true"]')
@@ -595,18 +610,19 @@ class XEngine:
                 return False, "Không thể điền nội dung bình luận vào ô soạn thảo 𝕏."
 
             # 5. TÌM NÚT ĐĂNG (TWEET / REPLY BUTTON)
-            post_btn = container.query_selector(
-                'button[data-testid="tweetButton"], '
-                'button[data-testid="tweetButtonInline"], '
-                'button:has-text("Reply"), '
-                'button:has-text("Trả lời")'
-            )
+            post_btn = container.query_selector('button[data-testid="tweetButton"]')
+            if not post_btn:
+                post_btn = container.query_selector(
+                    'button[data-testid="tweetButtonInline"], '
+                    'button:has-text("Reply"), '
+                    'button:has-text("Trả lời")'
+                )
             if not post_btn:
                 post_btn = self.page.query_selector('button[data-testid="tweetButton"], button[data-testid="tweetButtonInline"]')
 
             # Đợi nút Đăng chuyển sang trạng thái enabled (aria-disabled="false")
             if post_btn:
-                for _ in range(6):
+                for _ in range(8):
                     aria_dis = post_btn.get_attribute("aria-disabled")
                     is_dis = post_btn.get_attribute("disabled")
                     if aria_dis != "true" and is_dis is None:
@@ -629,7 +645,12 @@ class XEngine:
             if dialog:
                 dialog_still = self.page.query_selector('div[role="dialog"]')
                 if dialog_still:
-                    self.page.keyboard.press("Control+Enter")
+                    try:
+                        post_btn_still = dialog_still.query_selector('button[data-testid="tweetButton"]')
+                        if post_btn_still:
+                            post_btn_still.click()
+                    except Exception:
+                        self.page.keyboard.press("Control+Enter")
                     time.sleep(2.0)
 
             print(f"[X] Đã gửi bình luận thành công cho Tweet: {tweet_url} | Nội dung: {comment_text}")
